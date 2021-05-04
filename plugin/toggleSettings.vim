@@ -457,7 +457,7 @@ def MoveAndOpenFold(lhs: string, cnt: number)
     var old_winline: number = winline()
     if lhs == 'j' || lhs == '<down>'
         norm! gj
-        if &ft == 'markdown' && getline('.') =~ '^#\+$'
+        if &filetype == 'markdown' && getline('.') =~ '^#\+$'
             return
         endif
         var is_in_a_closed_fold: bool = foldclosed('.') >= 0
@@ -482,7 +482,7 @@ def MoveAndOpenFold(lhs: string, cnt: number)
         endif
     elseif lhs == 'k' || lhs == '<up>'
         norm! gk
-        if &ft == 'markdown' && getline('.') =~ '^#\+$'
+        if &filetype == 'markdown' && getline('.') =~ '^#\+$'
             return
         endif
         var is_in_a_closed_fold: bool = foldclosed('.') >= 0
@@ -498,7 +498,7 @@ def MoveAndOpenFold(lhs: string, cnt: number)
             endif
         endif
     else
-        sil! exe 'norm! zR'
+        exe 'sil! norm! zR'
             # We want to pass a count if we've pressed `123G`.
             # But we don't want any count if we've just pressed `G`.
             .. (cnt != 0 ? cnt : '')
@@ -509,10 +509,10 @@ enddef
 def DoesNotDistractInGoyo(): bool
     # In goyo mode, opening a fold containing only a long comment is distracting.
     # Because we only care about the code.
-    if !get(g:, 'in_goyo_mode', false) || &ft == 'markdown'
+    if !get(g:, 'in_goyo_mode', false) || &filetype == 'markdown'
         return true
     endif
-    var cml: string = matchstr(&l:cms, '\S*\ze\s*%s')
+    var cml: string = &cms->matchstr('\S*\ze\s*%s')
     # note that we allow opening numbered folds (because usually those can contain code)
     var fmr: string = '\%(' .. split(&l:fmr, ',')->join('\|') .. '\)'
     return getline('.') !~ '^\s*\V' .. escape(cml, '\') .. '\m.*' .. fmr .. '$'
@@ -574,17 +574,17 @@ def Conceallevel(enable: bool) #{{{2
         # to a question.
         # It could also be useful to pretty-print some logical/math symbols.
         #}}}
-        &l:cole = &ft == 'markdown' ? 2 : 3
+        &l:cole = &filetype == 'markdown' ? 2 : 3
     endif
     echo '[conceallevel] ' .. &l:cole
 enddef
 
 def EditHelpFile(allow: bool) #{{{2
-    if &ft != 'help'
+    if &filetype != 'help'
         return
     endif
 
-    if allow && &bt == 'help'
+    if allow && &buftype == 'help'
         setl ma noro bt=
 
         nno <buffer><nowait> <cr> 80<bar>
@@ -606,7 +606,7 @@ def EditHelpFile(allow: bool) #{{{2
 
         echo 'you CAN edit the file'
 
-    elseif !allow && &bt != 'help'
+    elseif !allow && &buftype != 'help'
         if &modified
             Error('save the buffer first')
             return
@@ -693,7 +693,7 @@ def AutoHlYankedText()
             pat = '\%>' .. (lnum - 1) .. 'l'
                .. '\%<' .. (lnum + len(text)) .. 'l'
         elseif type =~ "\<c-v>" .. '\d\+'
-            var width: number = matchstr(type, "\<c-v>" .. '\zs\d\+')->str2nr()
+            var width: number = type->matchstr("\<c-v>" .. '\zs\d\+')->str2nr()
             var height: number = len(text)
             pat = '\%>' .. (lnum - 1) .. 'l'
                .. '\%<' .. (lnum + height) .. 'l'
@@ -924,7 +924,8 @@ ToggleSettings(
 
 ToggleSettings(
     'D',
-    'windo diffthis',
+    # `windo diffthis` would be simpler but might also change the currently focused window.
+    'vim9 range(1, winnr("$"))->mapnew((_, v: number) => win_execute(win_getid(v), "diffthis"))',
     'diffoff! <bar> norm! zv',
     '&l:diff',
 )
@@ -1001,7 +1002,7 @@ ToggleSettings(
     'e',
     'call <sid>EditHelpFile(v:true)',
     'call <sid>EditHelpFile(v:false)',
-    '&bt == ""',
+    '&buftype == ""',
 )
 
 # Note: The lightness is not a boolean state.{{{
