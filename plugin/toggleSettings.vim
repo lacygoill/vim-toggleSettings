@@ -257,7 +257,7 @@ var smc_save: dict<number>
 
 # Commands {{{1
 
-com -bar -bang FoldAutoOpen toggleSettings#autoOpenFold(<bang>0)
+com -bar -bang FoldAutoOpen toggleSettings#autoOpenFold(<bang><bang>0)
 
 # Autocmds {{{1
 
@@ -325,8 +325,8 @@ def ToggleSettings( #{{{2
     endif
 enddef
 
-def toggleSettings#autoOpenFold(disable: bool) #{{{2
-    if !disable && !exists('b:auto_open_fold_mappings')
+def toggleSettings#autoOpenFold(enable: bool) #{{{2
+    if enable && !exists('b:auto_open_fold_mappings')
         if foldclosed('.') >= 0
             norm! zvzz
         endif
@@ -362,7 +362,7 @@ def toggleSettings#autoOpenFold(disable: bool) #{{{2
                     v:count,
             )
         endfor
-    elseif disable && exists('b:auto_open_fold_mappings')
+    elseif !enable && exists('b:auto_open_fold_mappings')
         MapRestore(b:auto_open_fold_mappings)
         unlet! b:auto_open_fold_mappings
     endif
@@ -1126,6 +1126,6 @@ ToggleSettings(
     'z',
     'call toggleSettings#autoOpenFold(v:false)',
     'call toggleSettings#autoOpenFold(v:true)',
-    'maparg("j", "n", 0, 1)->get("rhs", "") =~# "MoveAndOpenFold"'
+    'maparg("j", "n", 0, 1)->get("rhs", "") !~# "MoveAndOpenFold"'
 )
 
