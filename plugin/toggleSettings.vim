@@ -17,7 +17,7 @@ var loaded = true
 # It can  also be  used for (accidental)  repeated activations,  or (accidental)
 # repeated disactivations.
 #
-# There is no issue if the  function has no side effect (ex: `Colorscheme()`).
+# There is no issue if the  function has no side effect (e.g.: `Colorscheme()`).
 # But if it does (e.g. `#autoOpenFold()` creates a `b:` variable), and doesn't
 # handle repeated (dis)activations, you can experience an unexpected behavior.
 #
@@ -71,8 +71,8 @@ var loaded = true
 # If you want  to toggle an option with  only 2 possible values –  e.g. 'on' and
 # 'off' – then it's easy:
 #
-#     is_enabled = opt is# 'on'
-#     is_disabled = opt is# 'off'
+#     is_enabled = opt ==# 'on'
+#     is_disabled = opt ==# 'off'
 #
 # But  if you  want to  toggle an  option with  more than  2 values  – e.g.  'a'
 # (enabled), 'b' and 'c' (disabled) – then there is a catch.
@@ -81,15 +81,15 @@ var loaded = true
 #
 # For example, you should not write this:
 #
-#     is_enabled = opt is# 'a'
-#     is_disabled = opt is# 'c'
+#     is_enabled = opt ==# 'a'
+#     is_disabled = opt ==# 'c'
 #
 # But this:
 #
-#                      v----v
-#     is_enabled = opt isnot# 'a'
-#     is_disabled = opt isnot# 'c'
-#                       ^----^
+#                      vvv
+#     is_enabled = opt !=# 'c'
+#     is_disabled = opt !=# 'a'
+#                       ^^^
 #
 # With the  first code, if `opt`  has the the value  'b' (set by accident  or by
 # another plugin), your `if`/`elseif` blocks would never be run.
@@ -104,15 +104,15 @@ var loaded = true
 #
 # Example:
 #
-# When we press `[oq`, the state "local value of 'fp' is used" is enabled; let's
-# call this state X.
+# When  we press  `[oq`,  the state  "local  value of  'formatprg'  is used"  is
+# enabled; let's call this state X.
 #
-# When we disable X, `fp_save` is created inside `Formatprg()`.
-# So,  to determine  whether X  is enabled,  you could  check whether  `fp_save`
-# exists; if it does not, then X is enabled.
-# But when  you define what X  is, you don't need  to refer to `fp_save`  at any
-# point;  so  if  you're  inspecting  `fp_save`, you're  using  it  as  a  proxy
-# expression; it's a proxy for the state X.
+# When we disable X, `formatprg_save` is created inside `Formatprg()`.
+# So,   to  determine   whether  X   is   enabled,  you   could  check   whether
+# `formatprg_save` exists; if it does not, then X is enabled.
+# But when you define what X is,  you don't need to refer to `formatprg_save` at
+# any point;  so if  you're inspecting  `formatprg_save`, you're  using it  as a
+# proxy expression; it's a proxy for the state X.
 #}}}
 #   Why is it bad to use one?{{{
 #
@@ -120,11 +120,11 @@ var loaded = true
 # toggled via your mapping  (e.g. `coq`), which is not always  true; and even if
 # it is true now, it may not be true in the future.
 #
-# For example, the non-existence of `fp_save`  does not guarantee that the local
-# value of `'fp'` is used.
+# For example, the non-existence of `formatprg_save` does not guarantee that the
+# local value of `'formatprg'` is used.
 # The local value could have been emptied  by a third-party plugin (or you could
 # have done it  manually with a `:set[l]` command); in  which case, you're using
-# the global value, and yet `fp_save` does not exist.
+# the global value, and yet `formatprg_save` does not exist.
 #}}}
 #     When is it still ok to use one?{{{
 #
@@ -163,7 +163,7 @@ var loaded = true
 # It's the difference between the topline  of the current window and the topline
 # of the other bound window.
 #
-# From `:h 'sbo`:
+# From `:h 'scrollopt`:
 #
 #    > jump      Applies to the offset between two windows for vertical
 #    >           scrolling.  This offset is the difference in the first
@@ -175,16 +175,16 @@ var loaded = true
 #    > thought of as the difference between the current window's vertical scroll
 #    > position and the other window's vertical scroll position.
 #}}}
-# What's the effect of the `jump` flag in `'sbo'`?{{{
+# What's the effect of the `jump` flag in `'scrollopt'`?{{{
 #
 # It's included by default; if you remove it, here's what happens:
 #
 #     $ vim -Nu NONE -S <(cat <<'EOF'
-#         set scb sbo=ver lines=24 nu
-#         e /tmp/file1
-#         sil pu =range(char2nr('a'), char2nr('z'))->map({_, v -> nr2char(v)})->repeat(2)
-#         bo vs /tmp/file2
-#         sil pu =range(char2nr('a'), char2nr('z'))->map({_, v -> nr2char(v)})
+#         set scrollbind scrollopt=ver lines=24 number
+#         edit /tmp/file1
+#         silent put =range(char2nr('a'), char2nr('z'))->map({_, v -> nr2char(v)})->repeat(2)
+#         botright vsplit /tmp/file2
+#         silent put =range(char2nr('a'), char2nr('z'))->map({_, v -> nr2char(v)})
 #         windo 1
 #         1wincmd w
 #     EOF
@@ -214,14 +214,14 @@ var loaded = true
 # But when you press `j` to scroll down, the offset quickly gets back to 5.
 #
 # I don't know  how this behavior can  be useful; I find it  confusing, so don't
-# remove `jump` from `'sbo'`.
+# remove `jump` from `'scrollopt'`.
 #
-# Note that this effect is cancelled if you also set `'crb'`.
+# Note that this effect is cancelled if you also set `'cursorbind'`.
 #
 # For more info, see:
 #
-#     :h 'scb
-#     :h 'sbo
+#     :h 'scrollbind
+#     :h 'scrollopt
 #     :h scroll-binding
 #     :h scrollbind-relative
 #}}}
@@ -250,10 +250,10 @@ const SMC_BIG: number = 3'000
 
 const HL_TIME: number = 250
 
-var fp_save: dict<string>
+var formatprg_save: dict<string>
 var hl_yanked_text: bool
-var scb_save: dict<dict<bool>>
-var smc_save: dict<number>
+var scrollbind_save: dict<dict<bool>>
+var synmaxcol_save: dict<number>
 
 # Commands {{{1
 
@@ -276,9 +276,9 @@ augroup HoistToggleSettings | au!
     au User MyFlags statusline#hoist('buffer',
         \ '%{exists("b:auto_open_fold_mappings") ? "[AOF]" : ""}', 45, SFILE .. ':' .. expand('<sflnum>'))
     au User MyFlags statusline#hoist('buffer',
-       \ '%{&l:smc > 999 ? "[smc>999]" : ""}', 46, SFILE .. ':' .. expand('<sflnum>'))
+       \ '%{&l:synmaxcol > 999 ? "[smc>999]" : ""}', 46, SFILE .. ':' .. expand('<sflnum>'))
     au User MyFlags statusline#hoist('buffer',
-        \ '%{&l:nf =~# "alpha" ? "[nf~alpha]" : ""}', 47, SFILE .. ':' .. expand('<sflnum>'))
+        \ '%{&l:nrformats =~# "alpha" ? "[nf~alpha]" : ""}', 47, SFILE .. ':' .. expand('<sflnum>'))
 augroup END
 
 if exists('#MyStatusline#VimEnter')
@@ -379,8 +379,8 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
     #                 }
     #             # Consider setting 'foldnestmax' if you use 'indent'/'syntax' as a folding method.{{{
     #             #
-    #             # If you set the local value of  'fdm' to 'indent' or 'syntax', Vim will
-    #             # automatically fold the buffer according to its indentation / syntax.
+    #             # If you set the local value of  'foldmethod' to 'indent' or 'syntax', Vim
+    #             # will automatically fold the buffer according to its indentation / syntax.
     #             #
     #             # It can lead to deeply nested folds.  This can be annoying when you have
     #             # to open  a lot of  folds to  read the contents  of a line.
@@ -390,10 +390,10 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
     #             # Vim can produce with these 2 methods  anyway).  If you set it to 1, Vim
     #             # will only produce folds for the outermost blocks (functions/methods).
     #             #}}}
-    #             set foldclose=all
-    #             set foldopen=all
-    #             set foldenable
-    #             set foldlevel=0
+    #             &:foldclose = 'all'
+    #             &:foldopen = 'all'
+    #             &:foldenable = true
+    #             &:foldlevel = 0
     #         elseif !enable && &foldopen == 'all'
     #             for op in keys(fold_options_save)
     #                 exe '&fold' .. op .. ' = fold_options_save.' .. op
@@ -512,10 +512,10 @@ def DoesNotDistractInGoyo(): bool
     if !get(g:, 'in_goyo_mode', false) || &filetype == 'markdown'
         return true
     endif
-    var cml: string = &cms->matchstr('\S*\ze\s*%s')
+    var cml: string = &commentstring->matchstr('\S*\ze\s*%s')
     # note that we allow opening numbered folds (because usually those can contain code)
-    var fmr: string = '\%(' .. split(&l:fmr, ',')->join('\|') .. '\)'
-    return getline('.') !~ '^\s*\V' .. escape(cml, '\') .. '\m.*' .. fmr .. '$'
+    var foldmarker: string = '\%(' .. split(&l:foldmarker, ',')->join('\|') .. '\)'
+    return getline('.') !~ '^\s*\V' .. escape(cml, '\') .. '\m.*' .. foldmarker .. '$'
 enddef
 
 def FixWinline(old: number, dir: string)
@@ -526,13 +526,13 @@ def FixWinline(old: number, dir: string)
             return
         endif
         # if we were not at the top of the window before pressing `k`
-        if old > (&so + 1)
+        if old > (&scrolloff + 1)
             norm! zt
-            var new: number = (old - 1) - (&so + 1)
+            var new: number = (old - 1) - (&scrolloff + 1)
             if new != 0
                 exe 'norm! ' .. new .. "\<c-y>"
             endif
-        # old == (&so + 1)
+        # old == (&scrolloff + 1)
         else
             norm! zt
         endif
@@ -542,13 +542,13 @@ def FixWinline(old: number, dir: string)
             return
         endif
         # if we were not at the bottom of the window before pressing `j`
-        if old < (winheight(0) - &so)
+        if old < (winheight(0) - &scrolloff)
             norm! zt
-            var new: number = (old + 1) - (&so + 1)
+            var new: number = (old + 1) - (&scrolloff + 1)
             if new != 0
                 exe 'norm! ' .. new .. "\<c-y>"
             endif
-        # old == (winheight(0) - &so)
+        # old == (winheight(0) - &scrolloff)
         else
             norm! zb
         endif
@@ -565,7 +565,7 @@ enddef
 
 def Conceallevel(enable: bool) #{{{2
     if enable
-        &l:cole = 0
+        &l:conceallevel = 0
     else
         # Why toggling between `0` and `2`, instead of `0` and `3` like everywhere else?{{{
         #
@@ -574,9 +574,9 @@ def Conceallevel(enable: bool) #{{{2
         # to a question.
         # It could also be useful to pretty-print some logical/math symbols.
         #}}}
-        &l:cole = &filetype == 'markdown' ? 2 : 3
+        &l:conceallevel = &filetype == 'markdown' ? 2 : 3
     endif
-    echo '[conceallevel] ' .. &l:cole
+    echo '[conceallevel] ' .. &l:conceallevel
 enddef
 
 def EditHelpFile(allow: bool) #{{{2
@@ -585,7 +585,9 @@ def EditHelpFile(allow: bool) #{{{2
     endif
 
     if allow && &buftype == 'help'
-        setl ma noro bt=
+        &l:modifiable = true
+        &l:readonly = false
+        &l:buftype = ''
 
         nno <buffer><nowait> <cr> 80<bar>
 
@@ -612,8 +614,10 @@ def EditHelpFile(allow: bool) #{{{2
             return
         endif
         #
-        # don't reload the buffer before setting `'bt'`; it would change the cwd (`vim-cwd`)
-        setl noma ro bt=help
+        # don't reload the buffer before setting `'buftype'`; it would change the cwd (`vim-cwd`)
+        &l:modifiable = false
+        &l:readonly = true
+        &l:buftype = 'help'
         # reload ftplugin
         edit
         echo 'you can NOT edit the file'
@@ -621,19 +625,23 @@ def EditHelpFile(allow: bool) #{{{2
 enddef
 
 def Formatprg(scope: string) #{{{2
-    if scope == 'local' && &l:fp == ''
+    if scope == 'local' && &l:formatprg == ''
         var bufnr: number = bufnr('%')
-        if fp_save->has_key(bufnr)
-            &l:fp = fp_save[bufnr]
-            unlet! fp_save[bufnr]
+        if formatprg_save->has_key(bufnr)
+            &l:formatprg = formatprg_save[bufnr]
+            unlet! formatprg_save[bufnr]
         endif
-    elseif scope == 'global' && &l:fp != ''
+    elseif scope == 'global' && &l:formatprg != ''
         # save the local value on a per-buffer basis
-        fp_save[bufnr('%')] = &l:fp
+        formatprg_save[bufnr('%')] = &l:formatprg
         # clear the local value so that the global one is used
-        set fp<
+        set formatprg<
     endif
-    echo '[formatprg] ' .. (!empty(&l:fp) ? &l:fp .. ' (local)' : &g:fp .. ' (global)')
+    echo '[formatprg] ' .. (
+            !empty(&l:formatprg)
+            ? &l:formatprg .. ' (local)'
+            : &g:formatprg .. ' (global)'
+        )
 enddef
 
 def HlYankedText(action: string): bool #{{{2
@@ -714,7 +722,7 @@ var hl_yanked_text_id: number
 def Lightness(less: bool) #{{{2
 # increase or decrease the lightness
     var level: number
-    if &bg == 'light'
+    if &background == 'light'
         # `g:seoul256_light_background` is the value to be used the *next* time we execute `:colo seoul256-light`
         g:seoul256_light_background = get(g:,
             'seoul256_light_background',
@@ -822,41 +830,48 @@ enddef
 
 def Scrollbind(enable: bool) #{{{2
     var winid: number = win_getid()
-    if enable && !&l:scb
-        scb_save[winid] = {crb: &l:crb, cul: &l:cul, fen: &l:fen}
-        setl scb crb cul nofen
-        # not necessary  because we already set `'crb'` which  seems to have the
-        # same effect, but it doesn't harm
+    if enable && !&l:scrollbind
+        scrollbind_save[winid] = {
+            cursorbind: &l:cursorbind,
+            cursorline: &l:cursorline,
+            foldenable: &l:foldenable
+        }
+        &l:scrollbind = true
+        &l:cursorbind = true
+        &l:cursorline = true
+        &l:foldenable = false
+        # not necessary  because we  already set  `'cursorbind'` which  seems to
+        # have the same effect, but it doesn't harm
         syncbind
-    elseif !enable && &l:scb
-        setl noscb
-        if scb_save->has_key(winid)
-            &l:crb = get(scb_save[winid], 'crb', &l:crb)
-            &l:cul = get(scb_save[winid], 'cul', &l:cul)
-            &l:fen = get(scb_save[winid], 'fen', &l:fen)
-            unlet! scb_save[winid]
+    elseif !enable && &l:scrollbind
+        &l:scrollbind = false
+        if scrollbind_save->has_key(winid)
+            &l:cursorbind = get(scrollbind_save[winid], 'cursorbind', &l:cursorbind)
+            &l:cursorline = get(scrollbind_save[winid], 'cursorline', &l:cursorline)
+            &l:foldenable = get(scrollbind_save[winid], 'foldenable', &l:foldenable)
+            unlet! scrollbind_save[winid]
         endif
     endif
 enddef
 
 def Synmaxcol(enable: bool) #{{{2
     var bufnr: number = bufnr('%')
-    if enable && &l:smc != SMC_BIG
-        smc_save[bufnr] = &l:smc
-        &l:smc = SMC_BIG
-    elseif !enable && &l:smc == SMC_BIG
-        if smc_save->has_key(bufnr)
-            &l:smc = smc_save[bufnr]
-            unlet! smc_save[bufnr]
+    if enable && &l:synmaxcol != SMC_BIG
+        synmaxcol_save[bufnr] = &l:synmaxcol
+        &l:synmaxcol = SMC_BIG
+    elseif !enable && &l:synmaxcol == SMC_BIG
+        if synmaxcol_save->has_key(bufnr)
+            &l:synmaxcol = synmaxcol_save[bufnr]
+            unlet! synmaxcol_save[bufnr]
         endif
     endif
 enddef
 
 def Virtualedit(enable: bool) #{{{2
     if enable
-        set ve=all
+        &virtualedit = 'all'
     else
-        &ve = get(g:, '_ORIG_VIRTUALEDIT', &ve)
+        &virtualedit = get(g:, '_ORIG_VIRTUALEDIT', &virtualedit)
     endif
 enddef
 
@@ -871,7 +886,7 @@ def Nowrapscan(enable: bool) #{{{2
     # If the  latter was reset  manually, the function  would fail to  toggle it
     # back on.
     #}}}
-    if enable && &ws
+    if enable && &wrapscan
         # Why clearing `'whichwrap'` too?{{{
         #
         # It can cause the same issue as `'wrapscan'`.
@@ -881,13 +896,14 @@ def Nowrapscan(enable: bool) #{{{2
         #    - `'whichwrap'` suppresses this error if its value contains `h` or `l`
         #}}}
         whichwrap_save = &whichwrap
-        set nowrapscan whichwrap=
-    elseif !enable && !&ws
+        &wrapscan = false
+        &whichwrap = ''
+    elseif !enable && !&wrapscan
         if whichwrap_save != ''
             &whichwrap = whichwrap_save
             whichwrap_save = ''
         endif
-        set wrapscan
+        &wrapscan = true
     endif
 enddef
 var whichwrap_save: string
@@ -899,7 +915,7 @@ def Error(msg: string) #{{{2
 enddef
 # }}}1
 # Mappings {{{1
-# 2 "{{{2
+# 2 {{{2
 
 ToggleSettings('P', 'previewwindow')
 ToggleSettings('h', 'hlsearch')
@@ -919,7 +935,7 @@ ToggleSettings(
     'C',
     'call <sid>Colorscheme("dark")',
     'call <sid>Colorscheme("light")',
-    '&bg ==# "dark"',
+    '&background ==# "dark"',
 )
 
 ToggleSettings(
@@ -935,14 +951,14 @@ ToggleSettings(
     'L',
     'call colorscheme#cursorline(v:true)',
     'call colorscheme#cursorline(v:false)',
-    '&l:cul',
+    '&l:cursorline',
 )
 
 ToggleSettings(
     'S',
-    'setl spl=fr<bar>echo "[spelllang] FR"',
-    'setl spl=en<bar>echo "[spelllang] EN"',
-    '&l:spl is# "fr"',
+    'setl spelllang=fr<bar>echo "[spelllang] FR"',
+    'setl spelllang=en<bar>echo "[spelllang] EN"',
+    '&l:spelllang ==# "fr"',
 )
 
 ToggleSettings(
@@ -958,7 +974,7 @@ ToggleSettings(
     'W',
     'call <sid>Nowrapscan(v:true)',
     'call <sid>Nowrapscan(v:false)',
-    '&ws == 0',
+    '!&wrapscan',
 )
 
 # How is it useful?{{{
@@ -973,14 +989,14 @@ ToggleSettings(
 #}}}
 ToggleSettings(
     'a',
-    'setl nf+=alpha',
-    'setl nf-=alpha',
-    'split(&l:nf, ",")->index("alpha") >= 0',
+    'setl nrformats+=alpha',
+    'setl nrformats-=alpha',
+    'split(&l:nrformats, ",")->index("alpha") >= 0',
 )
 
 # Note: The conceal level is not a boolean state.{{{
 #
-# `'cole'` can have 4 different values.
+# `'conceallevel'` can have 4 different values.
 # But it doesn't cause any issue, because we still treat it as a boolean option.
 # We are only interested in 2 levels: 0 and 3 (or 2 in a markdown file).
 #}}}
@@ -988,7 +1004,7 @@ ToggleSettings(
     'c',
     'call <sid>Conceallevel(v:true)',
     'call <sid>Conceallevel(v:false)',
-    '&l:cole == 0',
+    '&l:conceallevel == 0',
 )
 
 ToggleSettings(
@@ -1034,7 +1050,7 @@ ToggleSettings(
     'm',
     'call <sid>Synmaxcol(v:true)',
     'call <sid>Synmaxcol(v:false)',
-    '&l:smc == ' .. SMC_BIG,
+    '&l:synmaxcol == ' .. SMC_BIG,
 )
 
 # Alternative:{{{
@@ -1056,18 +1072,18 @@ ToggleSettings(
 #         # So, we include it, and give it a value which brings us to state '11'.
 #
 #         exe {
-#             00: 'setl nu | setl rnu',
-#             11: 'setl nornu',
-#             01: 'setl nonu',
-#             10: 'setl nonu | setl nornu',
-#             }[&l:nu .. &l:rnu]
+#             falsefalse: '[&l:number, &l:relativenumber] = [true, true]',
+#             truetrue: '&l:relativenumber = false',
+#             falsetrue: '&l:number = false',
+#             truefalse: '[&l:number, &l:relativenumber] = [false, false]',
+#             }[&l:number .. &l:relativenumber]
 #     enddef
 #}}}
 ToggleSettings(
     'n',
-    'setl nu',
-    'setl nonu',
-    '&l:nu',
+    'setl number',
+    'setl nonumber',
+    '&l:number',
 )
 
 ToggleSettings(
@@ -1078,19 +1094,19 @@ ToggleSettings(
 )
 
 # `gq`  is currently  used to  format comments,  but it  can also  be useful  to
-# execute formatting tools such as js-beautify in html/css/js files.
+# execute formatting tools such as `js-beautify` in html/css/js files.
 ToggleSettings(
     'q',
     'call <sid>Formatprg("local")',
     'call <sid>Formatprg("global")',
-    '&l:fp != ""',
+    '&l:formatprg != ""',
 )
 
 ToggleSettings(
     'r',
     'call <sid>Scrollbind(v:true)',
     'call <sid>Scrollbind(v:false)',
-    '&l:scb',
+    '&l:scrollbind',
 )
 
 ToggleSettings(
@@ -1111,7 +1127,7 @@ ToggleSettings(
     'v',
     'call <sid>Virtualedit(v:true)',
     'call <sid>Virtualedit(v:false)',
-    '&ve is# "all"',
+    '&virtualedit ==# "all"',
 )
 
 ToggleSettings(
@@ -1126,6 +1142,6 @@ ToggleSettings(
     'z',
     'call toggleSettings#autoOpenFold(v:false)',
     'call toggleSettings#autoOpenFold(v:true)',
-    'maparg("j", "n", 0, 1)->get("rhs", "") !~# "MoveAndOpenFold"'
+    'maparg("j", "n", v:false, v:true)->get("rhs", "") !~# "MoveAndOpenFold"'
 )
 
