@@ -820,9 +820,9 @@ def Matchparen(enable: bool) #{{{2
     var matchparen_is_enabled: bool = exists('#matchparen')
 
     if enable && !matchparen_is_enabled
-        MatchParenOn
+        MatchParen on
     elseif !enable && matchparen_is_enabled
-        MatchParenOff
+        MatchParen off
     endif
 
     echo '[matchparen] ' .. (exists('#matchparen') ? 'ON' : 'OFF')
