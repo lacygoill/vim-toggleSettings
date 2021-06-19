@@ -273,6 +273,8 @@ const SFILE: string = expand('<sfile>:p')
 augroup HoistToggleSettings | au!
     au User MyFlags statusline#hoist('global',
         \ '%{get(g:, "my_verbose_errors", v:false) ? "[Verb]" : ""}', 6, SFILE .. ':' .. expand('<sflnum>'))
+    au User MyFlags statusline#hoist('global',
+        \ '%{get(g:, "debugging", v:false) ? "[Debug]" : ""}', 9, SFILE .. ':' .. expand('<sflnum>'))
     au User MyFlags statusline#hoist('buffer',
         \ '%{exists("b:auto_open_fold_mappings") ? "[AOF]" : ""}', 45, SFILE .. ':' .. expand('<sflnum>'))
     au User MyFlags statusline#hoist('buffer',
@@ -577,6 +579,15 @@ def Conceallevel(enable: bool) #{{{2
         &l:conceallevel = &filetype == 'markdown' ? 2 : 3
     endif
     echo '[conceallevel] ' .. &l:conceallevel
+enddef
+
+def Debugging(enable: bool) #{{{2
+# There is `v:profiling`, but there is no `v:debugging`.
+# The latter  would be handy  to temporarily disable command-line  mode mappings
+# and autocmds which  can interfere (i.e. add *a lot*  of irrelevant noise) when
+# we are in debug mode.  Let's emulate the variable with `g:debugging`.
+    g:debugging = enable
+    redrawt
 enddef
 
 def EditHelpFile(allow: bool) #{{{2
@@ -923,6 +934,13 @@ ToggleSettings('i', 'list')
 ToggleSettings('w', 'wrap')
 
 # 4 {{{2
+
+ToggleSettings(
+    '<c-d>',
+    'call <sid>Debugging(v:true)',
+    'call <sid>Debugging(v:false)',
+    'get(g:, "debugging")',
+)
 
 ToggleSettings(
     '<space>',
