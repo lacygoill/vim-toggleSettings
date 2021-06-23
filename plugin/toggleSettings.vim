@@ -867,9 +867,11 @@ enddef
 
 def Synmaxcol(enable: bool) #{{{2
     var bufnr: number = bufnr('%')
+
     if enable && &l:synmaxcol != SMC_BIG
         synmaxcol_save[bufnr] = &l:synmaxcol
         &l:synmaxcol = SMC_BIG
+
     elseif !enable && &l:synmaxcol == SMC_BIG
         if synmaxcol_save->has_key(bufnr)
             &l:synmaxcol = synmaxcol_save[bufnr]
