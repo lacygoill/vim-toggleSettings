@@ -358,10 +358,9 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
             # command-line.
             #}}}
             exe printf(
-                'nno <buffer><nowait> %s <cmd>call <sid>MoveAndOpenFold(%s, %d)<cr>',
+                'nno <buffer><nowait> %s <cmd>call <sid>MoveAndOpenFold(%s, v:count)<cr>',
                     lhs,
-                    lhs->substitute('^<\([^>]*>\)$', '<lt>\1', '')->string(),
-                    v:count,
+                    lhs->substitute('^<\([^>]*>\)$', '<lt>\1', '')->string()
             )
         endfor
     elseif !enable && exists('b:auto_open_fold_mappings')
