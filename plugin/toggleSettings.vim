@@ -71,8 +71,8 @@ var loaded = true
 # If you want  to toggle an option with  only 2 possible values –  e.g. 'on' and
 # 'off' – then it's easy:
 #
-#     is_enabled = opt ==# 'on'
-#     is_disabled = opt ==# 'off'
+#     is_enabled = opt == 'on'
+#     is_disabled = opt == 'off'
 #
 # But  if you  want to  toggle an  option with  more than  2 values  – e.g.  'a'
 # (enabled), 'b' and 'c' (disabled) – then there is a catch.
@@ -81,15 +81,15 @@ var loaded = true
 #
 # For example, you should not write this:
 #
-#     is_enabled = opt ==# 'a'
-#     is_disabled = opt ==# 'c'
+#     is_enabled = opt == 'a'
+#     is_disabled = opt == 'c'
 #
 # But this:
 #
-#                      vvv
-#     is_enabled = opt !=# 'c'
-#     is_disabled = opt !=# 'a'
-#                       ^^^
+#                      vv
+#     is_enabled = opt != 'c'
+#     is_disabled = opt != 'a'
+#                       ^^
 #
 # With the  first code, if `opt`  has the the value  'b' (set by accident  or by
 # another plugin), your `if`/`elseif` blocks would never be run.
@@ -163,13 +163,13 @@ var loaded = true
 # It's the difference between the topline  of the current window and the topline
 # of the other bound window.
 #
-# From `:h 'scrollopt`:
+# From `:help 'scrollopt'`:
 #
 #    > jump      Applies to the offset between two windows for vertical
 #    >           scrolling.  This offset is the difference in the first
 #    >           displayed line of the bound windows.
 #
-# And from `:h scrollbind-relative`:
+# And from `:help scrollbind-relative`:
 #
 #    > Each 'scrollbind' window keeps track of its "relative offset," which can be
 #    > thought of as the difference between the current window's vertical scroll
@@ -186,7 +186,7 @@ var loaded = true
 #         botright vsplit /tmp/file2
 #         silent put =range(char2nr('a'), char2nr('z'))->map({_, v -> nr2char(v)})
 #         windo 1
-#         1wincmd w
+#         :1 wincmd write
 #     EOF
 #     )
 #
@@ -220,10 +220,10 @@ var loaded = true
 #
 # For more info, see:
 #
-#     :h 'scrollbind
-#     :h 'scrollopt
-#     :h scroll-binding
-#     :h scrollbind-relative
+#     :help 'scrollbind'
+#     :help 'scrollopt'
+#     :help scroll-binding
+#     :help scrollbind-relative
 #}}}
 
 # Init {{{1
@@ -238,10 +238,10 @@ import {
 const AOF_LHS2NORM: dict<string> = {
     j: 'j',
     k: 'k',
-    '<down>': "\<down>",
-    '<up>': "\<up>",
-    '<c-d>': "\<c-d>",
-    '<c-u>': "\<c-u>",
+    '<Down>': "\<Down>",
+    '<Up>': "\<Up>",
+    '<C-D>': "\<C-D>",
+    '<C-U>': "\<C-U>",
     gg: 'gg',
     G: 'G',
 }
@@ -257,12 +257,12 @@ var synmaxcol_save: dict<number>
 
 # Commands {{{1
 
-com -bar -bang FoldAutoOpen toggleSettings#autoOpenFold(<bang><bang>0)
+command -bar -bang FoldAutoOpen toggleSettings#autoOpenFold(<bang><bang>0)
 
 # Autocmds {{{1
 
-augroup HlYankedText | au!
-    au TextYankPost * if HlYankedText('is_active')
+augroup HlYankedText | autocmd!
+    autocmd TextYankPost * if HlYankedText('is_active')
         |     AutoHlYankedText()
         | endif
 augroup END
@@ -270,21 +270,21 @@ augroup END
 # Statusline Flags {{{1
 
 const SFILE: string = expand('<sfile>:p')
-augroup HoistToggleSettings | au!
-    au User MyFlags statusline#hoist('global',
+augroup HoistToggleSettings | autocmd!
+    autocmd User MyFlags statusline#hoist('global',
         \ '%{get(g:, "my_verbose_errors", v:false) ? "[Verb]" : ""}', 6, SFILE .. ':' .. expand('<sflnum>'))
-    au User MyFlags statusline#hoist('global',
+    autocmd User MyFlags statusline#hoist('global',
         \ '%{get(g:, "debugging", v:false) ? "[Debug]" : ""}', 9, SFILE .. ':' .. expand('<sflnum>'))
-    au User MyFlags statusline#hoist('buffer',
+    autocmd User MyFlags statusline#hoist('buffer',
         \ '%{exists("b:auto_open_fold_mappings") ? "[AOF]" : ""}', 45, SFILE .. ':' .. expand('<sflnum>'))
-    au User MyFlags statusline#hoist('buffer',
+    autocmd User MyFlags statusline#hoist('buffer',
        \ '%{&l:synmaxcol > 999 ? "[smc>999]" : ""}', 46, SFILE .. ':' .. expand('<sflnum>'))
-    au User MyFlags statusline#hoist('buffer',
+    autocmd User MyFlags statusline#hoist('buffer',
         \ '%{&l:nrformats =~# "alpha" ? "[nf~alpha]" : ""}', 47, SFILE .. ':' .. expand('<sflnum>'))
 augroup END
 
 if exists('#MyStatusline#VimEnter')
-    do <nomodeline> MyStatusline VimEnter
+    doautocmd <nomodeline> MyStatusline VimEnter
 endif
 
 # Functions {{{1
@@ -298,39 +298,39 @@ def ToggleSettings( #{{{2
     var reset_cmd: string
     if reset == ''
         [set_cmd, reset_cmd] = [
-            'setl ' .. option,
-            'setl no' .. option,
+            'setlocal ' .. option,
+            'setlocal no' .. option,
         ]
 
         var toggle_cmd: string = 'if &l:' .. option
-            .. '<bar>    exe ' .. string(reset_cmd)
-            .. '<bar>else'
-            .. '<bar>    exe ' .. string(set_cmd)
-            .. '<bar>endif'
+            .. ' <Bar>    execute ' .. string(reset_cmd)
+            .. ' <Bar> else'
+            .. ' <Bar>    execute ' .. string(set_cmd)
+            .. ' <Bar> endif'
 
-        exe 'nno <unique> [o' .. key .. ' <cmd>' .. set_cmd .. '<cr>'
-        exe 'nno <unique> ]o' .. key .. ' <cmd>' .. reset_cmd .. '<cr>'
-        exe 'nno <unique> co' .. key .. ' <cmd>' .. toggle_cmd .. '<cr>'
+        execute 'nnoremap <unique> [o' .. key .. ' <Cmd>' .. set_cmd .. '<CR>'
+        execute 'nnoremap <unique> ]o' .. key .. ' <Cmd>' .. reset_cmd .. '<CR>'
+        execute 'nnoremap <unique> co' .. key .. ' <Cmd>' .. toggle_cmd .. '<CR>'
 
     else
         [set_cmd, reset_cmd] = [option, reset]
 
         var rhs3: string = '     if ' .. test
-            .. '<bar>    exe ' .. string(reset_cmd)
-            .. '<bar>else'
-            .. '<bar>    exe ' .. string(set_cmd)
-            .. '<bar>endif'
+            .. ' <Bar>    execute ' .. string(reset_cmd)
+            .. ' <Bar> else'
+            .. ' <Bar>    execute ' .. string(set_cmd)
+            .. ' <Bar> endif'
 
-        exe 'nno <unique> [o' .. key .. ' <cmd>' .. set_cmd .. '<cr>'
-        exe 'nno <unique> ]o' .. key .. ' <cmd>' .. reset_cmd .. '<cr>'
-        exe 'nno <unique> co' .. key .. ' <cmd>' .. rhs3 .. '<cr>'
+        execute 'nnoremap <unique> [o' .. key .. ' <Cmd>' .. set_cmd .. '<CR>'
+        execute 'nnoremap <unique> ]o' .. key .. ' <Cmd>' .. reset_cmd .. '<CR>'
+        execute 'nnoremap <unique> co' .. key .. ' <Cmd>' .. rhs3 .. '<CR>'
     endif
 enddef
 
 def toggleSettings#autoOpenFold(enable: bool) #{{{2
     if enable && !exists('b:auto_open_fold_mappings')
         if foldclosed('.') >= 0
-            norm! zvzz
+            normal! zvzz
         endif
         b:auto_open_fold_mappings = keys(AOF_LHS2NORM)->MapSave('n', true)
         for lhs in keys(AOF_LHS2NORM)
@@ -342,7 +342,7 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
             # your cursor will *not* land on the previous line, but on the first line of
             # the previous fold.
             #}}}
-            # Why `:sil!` before `:norm!`?{{{
+            # Why `:silent!` before `:normal!`?{{{
             #
             # If you're on  the last line and  you try to move  forward, it will
             # fail, and the rest of the sequence (`zMzv`) will not be processed.
@@ -351,14 +351,14 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
             #}}}
             # Why `substitute(...)`?{{{
             #
-            # To prevent some keys from being translated by `:nno`.
-            # E.g., you don't want `<c-u>` to be translated into a literal `C-u`.
+            # To prevent some keys from being translated by `:nnoremap`.
+            # E.g., you don't want `<C-U>` to be translated into a literal `C-u`.
             # Because  when you  press the  mapping, `C-u`  would not  be passed
             # to  `MoveAndOpenFold()`;  instead,  it  would be  pressed  on  the
             # command-line.
             #}}}
-            exe printf(
-                'nno <buffer><nowait> %s <cmd>call <sid>MoveAndOpenFold(%s, v:count)<cr>',
+            execute printf(
+                'nnoremap <buffer><nowait> %s <Cmd>call <SID>MoveAndOpenFold(%s, v:count)<CR>',
                     lhs,
                     lhs->substitute('^<\([^>]*>\)$', '<lt>\1', '')->string()
             )
@@ -397,17 +397,17 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
     #             &:foldlevel = 0
     #         elseif !enable && &foldopen == 'all'
     #             for op in keys(fold_options_save)
-    #                 exe '&fold' .. op .. ' = fold_options_save.' .. op
+    #                 execute '&fold' .. op .. ' = fold_options_save.' .. op
     #             endfor
-    #             norm! zMzv
+    #             normal! zMzv
     #             fold_options_save = {}
     #         endif
     #     enddef
     #     fold_options_save: dict<any>
     #     ToggleSettings(
     #         'z',
-    #         'call <sid>AutoOpenFold(v:true)',
-    #         'call <sid>AutoOpenFold(v:false)',
+    #         'call <SID>AutoOpenFold(v:true)',
+    #         'call <SID>AutoOpenFold(v:false)',
     #         '&foldopen ==# "all"',
     #         )
     #}}}
@@ -442,7 +442,7 @@ enddef
 #}}}
 # Warning: Folds won't be opened/closed if the next line is in a new fold which is not closed.{{{
 #
-# This is because  we run `norm! zMzv`  iff the foldlevel has changed,  or if we
+# This is because we run `normal! zMzv`  iff the foldlevel has changed, or if we
 # get on a line in a closed fold.
 #}}}
 # Why don't you fix this?{{{
@@ -456,8 +456,8 @@ enddef
 def MoveAndOpenFold(lhs: string, cnt: number)
     var old_foldlevel: number = foldlevel('.')
     var old_winline: number = winline()
-    if lhs == 'j' || lhs == '<down>'
-        norm! gj
+    if lhs == 'j' || lhs == '<Down>'
+        normal! gj
         if &filetype == 'markdown' && getline('.') =~ '^#\+$'
             return
         endif
@@ -467,7 +467,7 @@ def MoveAndOpenFold(lhs: string, cnt: number)
         # need to  check `level_changed` to handle  the case where we  move from
         # the end of a nested fold to the next line in the containing fold
         if (is_in_a_closed_fold || level_changed) && DoesNotDistractInGoyo()
-            norm! zMzv
+            normal! zMzv
             # Rationale:{{{
             #
             # I don't  mind the distance between  the cursor and the  top of the
@@ -481,8 +481,8 @@ def MoveAndOpenFold(lhs: string, cnt: number)
                 FixWinline(old_winline, 'j')
             endif
         endif
-    elseif lhs == 'k' || lhs == '<up>'
-        norm! gk
+    elseif lhs == 'k' || lhs == '<Up>'
+        normal! gk
         if &filetype == 'markdown' && getline('.') =~ '^#\+$'
             return
         endif
@@ -492,14 +492,14 @@ def MoveAndOpenFold(lhs: string, cnt: number)
         # need to  check `level_changed` to handle  the case where we  move from
         # the start of a nested fold to the previous line in the containing fold
         if (is_in_a_closed_fold || level_changed) && DoesNotDistractInGoyo()
-            # `sil!` to make sure all the keys are pressed, even if an error occurs
-            sil! norm! gjzRgkzMzv
+            # `silent!` to make sure all the keys are pressed, even if an error occurs
+            silent! normal! gjzRgkzMzv
             if get(g:, 'in_goyo_mode', false)
                 FixWinline(old_winline, 'k')
             endif
         endif
     else
-        exe 'sil! norm! zR'
+        execute 'silent! normal! zR'
             # We want to pass a count if we've pressed `123G`.
             # But we don't want any count if we've just pressed `G`.
             .. (cnt != 0 ? cnt : '')
@@ -528,14 +528,14 @@ def FixWinline(old: number, dir: string)
         endif
         # if we were not at the top of the window before pressing `k`
         if old > (&scrolloff + 1)
-            norm! zt
+            normal! zt
             var new: number = (old - 1) - (&scrolloff + 1)
             if new != 0
-                exe 'norm! ' .. new .. "\<c-y>"
+                execute 'normal! ' .. new .. "\<C-Y>"
             endif
         # old == (&scrolloff + 1)
         else
-            norm! zt
+            normal! zt
         endif
     elseif dir == 'j'
         # getting one line closer from the bottom of the window is expected; nothing to fix
@@ -544,23 +544,23 @@ def FixWinline(old: number, dir: string)
         endif
         # if we were not at the bottom of the window before pressing `j`
         if old < (winheight(0) - &scrolloff)
-            norm! zt
+            normal! zt
             var new: number = (old + 1) - (&scrolloff + 1)
             if new != 0
-                exe 'norm! ' .. new .. "\<c-y>"
+                execute 'normal! ' .. new .. "\<C-Y>"
             endif
         # old == (winheight(0) - &scrolloff)
         else
-            norm! zb
+            normal! zb
         endif
     endif
 enddef
 
 def Colorscheme(type: string) #{{{2
     if type == 'light'
-        colo seoul256-light
+        colorscheme seoul256-light
     else
-        colo seoul256
+        colorscheme seoul256
     endif
 enddef
 
@@ -586,7 +586,7 @@ def Debugging(enable: bool) #{{{2
 # and autocmds which  can interfere (i.e. add *a lot*  of irrelevant noise) when
 # we are in debug mode.  Let's emulate the variable with `g:debugging`.
     g:debugging = enable
-    redrawt
+    redrawtabline
 enddef
 
 def EditHelpFile(allow: bool) #{{{2
@@ -599,7 +599,7 @@ def EditHelpFile(allow: bool) #{{{2
         &l:readonly = false
         &l:buftype = ''
 
-        nno <buffer><nowait> <cr> 80<bar>
+        nnoremap <buffer><nowait> <CR> 80<Bar>
 
         var keys: list<string> =<< trim END
             p
@@ -607,12 +607,12 @@ def EditHelpFile(allow: bool) #{{{2
             u
         END
         for key in keys
-            exe 'sil unmap <buffer> ' .. key
+            execute 'silent unmap <buffer> ' .. key
         endfor
 
         for pat in keys
                  ->map((_, v: string): string =>
-                        '|\s*exe\s*''[nx]unmap\s*<buffer>\s*' .. v .. "'")
+                        '|\s*execute\s*''[nx]unmap\s*<buffer>\s*' .. v .. "'")
             b:undo_ftplugin = b:undo_ftplugin->substitute(pat, '', 'g')
         endfor
 
@@ -710,8 +710,8 @@ def AutoHlYankedText()
         elseif type == 'V'
             pat = '\%>' .. (lnum - 1) .. 'l'
                .. '\%<' .. (lnum + len(text)) .. 'l'
-        elseif type =~ "\<c-v>" .. '\d\+'
-            var width: number = type->matchstr("\<c-v>" .. '\zs\d\+')->str2nr()
+        elseif type =~ "\<C-V>" .. '\d\+'
+            var width: number = type->matchstr("\<C-V>" .. '\zs\d\+')->str2nr()
             var height: number = len(text)
             pat = '\%>' .. (lnum - 1) .. 'l'
                .. '\%<' .. (lnum + height) .. 'l'
@@ -733,7 +733,8 @@ def Lightness(less: bool) #{{{2
 # increase or decrease the lightness
     var level: number
     if &background == 'light'
-        # `g:seoul256_light_background` is the value to be used the *next* time we execute `:colo seoul256-light`
+        # `g:seoul256_light_background` is the value to  be used the *next* time
+        # we execute `:colorscheme seoul256-light`
         g:seoul256_light_background = get(g:,
             'seoul256_light_background',
             g:seoul256_default_lightness
@@ -785,12 +786,13 @@ def Lightness(less: bool) #{{{2
             : (g:seoul256_light_background - 252 + 1) % (4 + 1) + 252
 
         # update colorscheme
-        colo seoul256-light
+        colorscheme seoul256-light
         # get info to display in a message
         level = g:seoul256_light_background - 252 + 1
 
     else
-        # `g:seoul256_background` is the value to be used the *next* time we execute `:colo seoul256`
+        # `g:seoul256_background` is the value to be used the *next* time
+        # we execute `:colorscheme seoul256`
         g:seoul256_background = get(g:, 'seoul256_background', 237)
 
         # We need to make `g:seoul256_background` cycle through `[233, 239]`.
@@ -817,7 +819,7 @@ def Lightness(less: bool) #{{{2
             ? 239 - (239 - g:seoul256_background + 1) % (6 + 1)
             : (g:seoul256_background - 233 + 1) % (6 + 1) + 233
 
-        colo seoul256
+        colorscheme seoul256
         level = g:seoul256_background - 233 + 1
     endif
 
@@ -922,7 +924,7 @@ var whichwrap_save: string
 
 def Error(msg: string) #{{{2
     echohl ErrorMsg
-    echom msg
+    echomsg msg
     echohl NONE
 enddef
 # }}}1
@@ -937,14 +939,14 @@ ToggleSettings('w', 'wrap')
 # 4 {{{2
 
 ToggleSettings(
-    '<c-d>',
-    'call <sid>Debugging(v:true)',
-    'call <sid>Debugging(v:false)',
+    '<C-D>',
+    'call <SID>Debugging(v:true)',
+    'call <SID>Debugging(v:false)',
     'get(g:, "debugging")',
 )
 
 ToggleSettings(
-    '<space>',
+    '<Space>',
     'set diffopt+=iwhiteall',
     'set diffopt-=iwhiteall',
     '&diffopt =~# "iwhiteall"',
@@ -952,16 +954,16 @@ ToggleSettings(
 
 ToggleSettings(
     'C',
-    'call <sid>Colorscheme("dark")',
-    'call <sid>Colorscheme("light")',
+    'call <SID>Colorscheme("dark")',
+    'call <SID>Colorscheme("light")',
     '&background ==# "dark"',
 )
 
 ToggleSettings(
     'D',
     # `windo diffthis` would be simpler but might also change the currently focused window.
-    'vim9 range(1, winnr("$"))->mapnew((_, v: number) => win_execute(win_getid(v), "diffthis"))',
-    'diffoff! <bar> norm! zv',
+    'vim9cmd range(1, winnr("$"))->mapnew((_, v: number) => win_execute(win_getid(v), "diffthis"))',
+    'diffoff! <Bar> normal! zv',
     '&l:diff',
 )
 
@@ -975,15 +977,15 @@ ToggleSettings(
 
 ToggleSettings(
     'S',
-    'setl spelllang=fr<bar>echo "[spelllang] FR"',
-    'setl spelllang=en<bar>echo "[spelllang] EN"',
+    'setlocal spelllang=fr <Bar> echo "[spelllang] FR"',
+    'setlocal spelllang=en <Bar> echo "[spelllang] EN"',
     '&l:spelllang ==# "fr"',
 )
 
 ToggleSettings(
     'V',
-    'let g:my_verbose_errors = v:true<bar>redrawt',
-    'let g:my_verbose_errors = v:false<bar>redrawt',
+    'let g:my_verbose_errors = v:true <Bar> redrawtabline',
+    'let g:my_verbose_errors = v:false <Bar> redrawtabline',
     'get(g:, "my_verbose_errors", v:false)',
 )
 
@@ -991,8 +993,8 @@ ToggleSettings(
 # to be sure it's not stuck in an infinite loop
 ToggleSettings(
     'W',
-    'call <sid>Nowrapscan(v:true)',
-    'call <sid>Nowrapscan(v:false)',
+    'call <SID>Nowrapscan(v:true)',
+    'call <SID>Nowrapscan(v:false)',
     '!&wrapscan',
 )
 
@@ -1008,8 +1010,8 @@ ToggleSettings(
 #}}}
 ToggleSettings(
     'a',
-    'setl nrformats+=alpha',
-    'setl nrformats-=alpha',
+    'setlocal nrformats+=alpha',
+    'setlocal nrformats-=alpha',
     'split(&l:nrformats, ",")->index("alpha") >= 0',
 )
 
@@ -1021,22 +1023,22 @@ ToggleSettings(
 #}}}
 ToggleSettings(
     'c',
-    'call <sid>Conceallevel(v:true)',
-    'call <sid>Conceallevel(v:false)',
+    'call <SID>Conceallevel(v:true)',
+    'call <SID>Conceallevel(v:false)',
     '&l:conceallevel == 0',
 )
 
 ToggleSettings(
     'd',
     'diffthis',
-    'diffoff <bar> norm! zv',
+    'diffoff <Bar> normal! zv',
     '&l:diff',
 )
 
 ToggleSettings(
     'e',
-    'call <sid>EditHelpFile(v:true)',
-    'call <sid>EditHelpFile(v:false)',
+    'call <SID>EditHelpFile(v:true)',
+    'call <SID>EditHelpFile(v:false)',
     '&buftype == ""',
 )
 
@@ -1045,7 +1047,7 @@ ToggleSettings(
 # So the boolean argument passed to `Lightness()` has not the same meaning as in
 # other similar mappings.
 #
-# For  example,  in  `call  <sid>Matchparen(v:true)`, `v:true`  stands  for  the
+# For  example,  in  `call  <SID>Matchparen(v:true)`, `v:true`  stands  for  the
 # enabled state of the matchparen plugin.  But here, `v:true` simply means "less
 # lightness", and `v:false` means "more lightness".
 #
@@ -1060,15 +1062,15 @@ ToggleSettings(
 #}}}
 ToggleSettings(
     'l',
-    'call <sid>Lightness(v:true)',
-    'call <sid>Lightness(v:false)',
+    'call <SID>Lightness(v:true)',
+    'call <SID>Lightness(v:false)',
     'v:true',
 )
 
 ToggleSettings(
     'm',
-    'call <sid>Synmaxcol(v:true)',
-    'call <sid>Synmaxcol(v:false)',
+    'call <SID>Synmaxcol(v:true)',
+    'call <SID>Synmaxcol(v:false)',
     '&l:synmaxcol == ' .. SMC_BIG,
 )
 
@@ -1081,7 +1083,7 @@ ToggleSettings(
 #
 # ---
 #
-#     nno con <cmd>call <sid>Numbers()<cr>
+#     nnoremap con <Cmd>call <SID>Numbers()<CR>
 #
 #     def Numbers()
 #         # The key '01' (state) is not necessary because no command in the dictionary
@@ -1090,7 +1092,7 @@ ToggleSettings(
 #         # an error (E716: Key not present in Dictionary).
 #         # So, we include it, and give it a value which brings us to state '11'.
 #
-#         exe {
+#         execute {
 #             falsefalse: '[&l:number, &l:relativenumber] = [true, true]',
 #             truetrue: '&l:relativenumber = false',
 #             falsetrue: '&l:number = false',
@@ -1100,15 +1102,15 @@ ToggleSettings(
 #}}}
 ToggleSettings(
     'n',
-    'setl number',
-    'setl nonumber',
+    'setlocal number',
+    'setlocal nonumber',
     '&l:number',
 )
 
 ToggleSettings(
     'p',
-    'call <sid>Matchparen(v:true)',
-    'call <sid>Matchparen(v:false)',
+    'call <SID>Matchparen(v:true)',
+    'call <SID>Matchparen(v:false)',
     'exists("#matchparen")',
 )
 
@@ -1116,44 +1118,44 @@ ToggleSettings(
 # execute formatting tools such as `js-beautify` in html/css/js files.
 ToggleSettings(
     'q',
-    'call <sid>Formatprg("local")',
-    'call <sid>Formatprg("global")',
+    'call <SID>Formatprg("local")',
+    'call <SID>Formatprg("global")',
     '&l:formatprg != ""',
 )
 
 ToggleSettings(
     'r',
-    'call <sid>Scrollbind(v:true)',
-    'call <sid>Scrollbind(v:false)',
+    'call <SID>Scrollbind(v:true)',
+    'call <SID>Scrollbind(v:false)',
     '&l:scrollbind',
 )
 
 ToggleSettings(
     's',
-    'setl spell"',
-    'setl nospell"',
+    'setlocal spell"',
+    'setlocal nospell"',
     '&l:spell',
 )
 
 ToggleSettings(
     't',
-    'let b:foldtitle_full=v:true <bar> redraw!',
-    'let b:foldtitle_full=v:false <bar> redraw!',
+    'let b:foldtitle_full=v:true <Bar> redraw!',
+    'let b:foldtitle_full=v:false <Bar> redraw!',
     'get(b:, "foldtitle_full", v:false)',
 )
 
 ToggleSettings(
     'v',
-    'call <sid>Virtualedit(v:true)',
-    'call <sid>Virtualedit(v:false)',
+    'call <SID>Virtualedit(v:true)',
+    'call <SID>Virtualedit(v:false)',
     '&virtualedit ==# "all"',
 )
 
 ToggleSettings(
     'y',
-    'call <sid>HlYankedText("enable")',
-    'call <sid>HlYankedText("disable")',
-    '<sid>HlYankedText("is_active")',
+    'call <SID>HlYankedText("enable")',
+    'call <SID>HlYankedText("disable")',
+    '<SID>HlYankedText("is_active")',
 )
 
 # Vim uses `z` as a prefix to build all fold-related commands in normal mode.
