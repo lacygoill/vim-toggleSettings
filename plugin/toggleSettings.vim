@@ -179,16 +179,13 @@ var loaded = true
 #
 # It's included by default; if you remove it, here's what happens:
 #
-#     $ vim -Nu NONE -S <(cat <<'EOF'
-#         set scrollbind scrollopt=ver lines=24 number
-#         edit /tmp/file1
-#         silent put =range(char2nr('a'), char2nr('z'))->map({_, v -> nr2char(v)})->repeat(2)
-#         botright vsplit /tmp/file2
-#         silent put =range(char2nr('a'), char2nr('z'))->map({_, v -> nr2char(v)})
-#         windo 1
-#         :1 wincmd write
-#     EOF
-#     )
+#     # in a terminal with 24 lines
+#     set scrollbind scrollopt=ver number
+#     silent put =range(char2nr('a'), char2nr('z'))->mapnew((_, v) => nr2char(v))->repeat(2)
+#     botright vnew
+#     silent put =range(char2nr('a'), char2nr('z'))->mapnew((_, v) => nr2char(v))
+#     windo :1
+#     wincmd w
 #
 # Now, press:
 #
@@ -308,9 +305,13 @@ def ToggleSettings( #{{{2
             .. ' <Bar>    execute ' .. string(set_cmd)
             .. ' <Bar> endif'
 
-        execute 'nnoremap <unique> [o' .. key .. ' <Cmd>' .. set_cmd .. '<CR>'
-        execute 'nnoremap <unique> ]o' .. key .. ' <Cmd>' .. reset_cmd .. '<CR>'
-        execute 'nnoremap <unique> co' .. key .. ' <Cmd>' .. toggle_cmd .. '<CR>'
+        execute 'nmap <unique> [o' .. key .. ' <Plug>([o' .. key .. ')'
+        execute 'nmap <unique> ]o' .. key .. ' <Plug>(]o' .. key .. ')'
+        execute 'nmap <unique> co' .. key .. ' <Plug>(co' .. key .. ')'
+
+        execute 'nnoremap <Plug>([o' .. key .. ') <Cmd>' .. set_cmd .. '<CR>'
+        execute 'nnoremap <Plug>(]o' .. key .. ') <Cmd>' .. reset_cmd .. '<CR>'
+        execute 'nnoremap <Plug>(co' .. key .. ') <Cmd>' .. toggle_cmd .. '<CR>'
 
     else
         [set_cmd, reset_cmd] = [option, reset]
@@ -321,9 +322,13 @@ def ToggleSettings( #{{{2
             .. ' <Bar>    execute ' .. string(set_cmd)
             .. ' <Bar> endif'
 
-        execute 'nnoremap <unique> [o' .. key .. ' <Cmd>' .. set_cmd .. '<CR>'
-        execute 'nnoremap <unique> ]o' .. key .. ' <Cmd>' .. reset_cmd .. '<CR>'
-        execute 'nnoremap <unique> co' .. key .. ' <Cmd>' .. rhs3 .. '<CR>'
+        execute 'nmap <unique> [o' .. key .. ' <Plug>([o' .. key .. ')'
+        execute 'nmap <unique> ]o' .. key .. ' <Plug>(]o' .. key .. ')'
+        execute 'nmap <unique> co' .. key .. ' <Plug>(co' .. key .. ')'
+
+        execute 'nnoremap <Plug>([o' .. key .. ') <Cmd>' .. set_cmd .. '<CR>'
+        execute 'nnoremap <Plug>(]o' .. key .. ') <Cmd>' .. reset_cmd .. '<CR>'
+        execute 'nnoremap <Plug>(co' .. key .. ') <Cmd>' .. rhs3 .. '<CR>'
     endif
 enddef
 
@@ -332,8 +337,10 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
         if foldclosed('.') >= 0
             normal! zvzz
         endif
-        b:auto_open_fold_mappings = keys(AOF_LHS2NORM)->MapSave('n', true)
-        for lhs in keys(AOF_LHS2NORM)
+        b:auto_open_fold_mappings = AOF_LHS2NORM
+            ->keys()
+            ->MapSave('n', true)
+        for lhs in AOF_LHS2NORM->keys()
             # Why do you open all folds with `zR`?{{{
             #
             # This is necessary when you scroll backward.
@@ -611,7 +618,7 @@ def EditHelpFile(allow: bool) #{{{2
         endfor
 
         for pat in keys
-                 ->map((_, v: string): string =>
+                 ->map((_, v: string) =>
                         '|\s*execute\s*''[nx]unmap\s*<buffer>\s*' .. v .. "'")
             b:undo_ftplugin = b:undo_ftplugin->substitute(pat, '', 'g')
         endfor
@@ -1083,7 +1090,7 @@ ToggleSettings(
 #
 # ---
 #
-#     nnoremap con <Cmd>call <SID>Numbers()<CR>
+#     nnoremap <unique> con <Cmd>call <SID>Numbers()<CR>
 #
 #     def Numbers()
 #         # The key '01' (state) is not necessary because no command in the dictionary
