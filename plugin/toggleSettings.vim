@@ -340,7 +340,7 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
         b:auto_open_fold_mappings = AOF_LHS2NORM
             ->keys()
             ->MapSave('n', true)
-        for lhs in AOF_LHS2NORM->keys()
+        for lhs: string in AOF_LHS2NORM->keys()
             # Why do you open all folds with `zR`?{{{
             #
             # This is necessary when you scroll backward.
@@ -403,7 +403,7 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
     #             &:foldenable = true
     #             &:foldlevel = 0
     #         elseif !enable && &foldopen == 'all'
-    #             for op in keys(fold_options_save)
+    #             for op: string in keys(fold_options_save)
     #                 execute '&fold' .. op .. ' = fold_options_save.' .. op
     #             endfor
     #             normal! zMzv
@@ -613,11 +613,11 @@ def EditHelpFile(allow: bool) #{{{2
             q
             u
         END
-        for key in keys
+        for key: string in keys
             execute 'silent unmap <buffer> ' .. key
         endfor
 
-        for pat in keys
+        for pat: string in keys
                  ->map((_, v: string) =>
                         '|\s*execute\s*''[nx]unmap\s*<buffer>\s*' .. v .. "'")
             b:undo_ftplugin = b:undo_ftplugin->substitute(pat, '', 'g')
