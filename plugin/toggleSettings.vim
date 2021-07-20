@@ -275,7 +275,7 @@ augroup HoistToggleSettings | autocmd!
     autocmd User MyFlags statusline#hoist('buffer',
         \ '%{exists("b:auto_open_fold_mappings") ? "[AOF]" : ""}', 45, SFILE .. ':' .. expand('<sflnum>'))
     autocmd User MyFlags statusline#hoist('buffer',
-       \ '%{&l:synmaxcol > 999 ? "[smc>999]" : ""}', 46, SFILE .. ':' .. expand('<sflnum>'))
+        \ '%{&l:synmaxcol > 999 ? "[smc>999]" : ""}', 46, SFILE .. ':' .. expand('<sflnum>'))
     autocmd User MyFlags statusline#hoist('buffer',
         \ '%{&l:nrformats =~# "alpha" ? "[nf~alpha]" : ""}', 47, SFILE .. ':' .. expand('<sflnum>'))
 augroup END
@@ -565,9 +565,9 @@ enddef
 
 def Colorscheme(type: string) #{{{2
     if type == 'light'
-        colorscheme seoul256-light
+        colorscheme seoul-light
     else
-        colorscheme seoul256
+        colorscheme seoul-dark
     endif
 enddef
 
@@ -735,105 +735,6 @@ def AutoHlYankedText()
     endtry
 enddef
 var hl_yanked_text_id: number
-
-def Lightness(less: bool) #{{{2
-# increase or decrease the lightness
-    var level: number
-    if &background == 'light'
-        # `g:seoul256_light_background` is the value to  be used the *next* time
-        # we execute `:colorscheme seoul256-light`
-        g:seoul256_light_background = get(g:,
-            'seoul256_light_background',
-            g:seoul256_default_lightness
-        )
-
-        # We need to make `g:seoul256_light_background` cycle through `[252, 256]`.
-        # How to make a number `n` cycle through `[a, a+1, ..., a+p]`?{{{
-        #                                                ^
-        #                                                `n` will always be somewhere in the middle
-        #
-        # Let's solve the issue for `a = 0`; i.e. let's make `n` cycle from 0 up to `p`.
-        #
-        # Special Case Solution:
-        #
-        #     ┌ new value of `n`
-        #     │     ┌ old value of `n`
-        #     │     │
-        #     n2 = (n1 + 1) % (p + 1)
-        #           ├────┘  ├───────┘
-        #           │       └ but don't go above `p`
-        #           │         read this as:  “p+1 is off-limit”
-        #           │
-        #           └ increment
-        #
-        # To use this solution, we need to find a link between the problem we've
-        # just solved and our original problem.
-        # In the latter, what cycles between 0 and `p`?: the distance between `a` and `n`.
-        #
-        # General Solution:
-        #
-        #     ┌ old distance between `n` and `a`
-        #     │     ┌ new distance
-        #     │     │
-        #     d2 = (d1 + 1) % (p + 1)
-        #
-        #     ⇔ d2 = (d1 + 1) % (p + 1)
-        #     ⇔ n2 - a = (n1 - a + 1) % (p + 1)
-        #
-        #            ┌ final formula
-        #            ├────────────────────────┐
-        #     ⇔ n2 = (n1 - a + 1) % (p + 1) + a
-        #             ├────────┘  ├───────┘ ├─┘
-        #             │           │         └ we want the distance from 0, not from `a`; so add `a`
-        #             │           └ but don't go too far
-        #             └ move away (+ 1) from `a` (n1 - a)
-        #}}}
-        g:seoul256_light_background = less
-            ? 256 - (256 - g:seoul256_light_background + 1) % (4 + 1)
-            : (g:seoul256_light_background - 252 + 1) % (4 + 1) + 252
-
-        # update colorscheme
-        colorscheme seoul256-light
-        # get info to display in a message
-        level = g:seoul256_light_background - 252 + 1
-
-    else
-        # `g:seoul256_background` is the value to be used the *next* time
-        # we execute `:colorscheme seoul256`
-        g:seoul256_background = get(g:, 'seoul256_background', 237)
-
-        # We need to make `g:seoul256_background` cycle through `[233, 239]`.
-        # How to make a number cycle through `[a+p, a+p-1, ..., a]`?{{{
-        #
-        # We want to cycle from `a + p` down to `a`.
-        #
-        # Let's use the formula `(d + 1) % (p + 1)` to update the *distance* between `n` and `a+p`:
-        #
-        #               d2 = (d1 + 1) % (p + 1)
-        #     ⇔ a + p - n2 = (a + p - n1 + 1) % (p + 1)
-        #
-        #            ┌ final formula
-        #            ├────────────────────────────────┐
-        #     ⇔ n2 = a + p - (a + p - n1 + 1) % (p + 1)
-        #            ├───┘    ├────────────┘  ├───────┘
-        #            │        │               └ but don't go too far
-        #            │        │
-        #            │        └ move away (+ 1) from `a + p` (a + p - n1)
-        #            │
-        #            └ we want the distance from 0, not from `a + p`, so add `a + p`
-        #}}}
-        g:seoul256_background = less
-            ? 239 - (239 - g:seoul256_background + 1) % (6 + 1)
-            : (g:seoul256_background - 233 + 1) % (6 + 1) + 233
-
-        colorscheme seoul256
-        level = g:seoul256_background - 233 + 1
-    endif
-
-    timer_start(0, (_) => {
-        echo '[lightness] ' .. level
-    })
-enddef
 
 def Matchparen(enable: bool) #{{{2
     var matchparen_is_enabled: bool = exists('#matchparen')
@@ -1047,31 +948,6 @@ ToggleSettings(
     'call <SID>EditHelpFile(v:true)',
     'call <SID>EditHelpFile(v:false)',
     '&buftype == ""',
-)
-
-# Note: The lightness is not a boolean state.{{{
-#
-# So the boolean argument passed to `Lightness()` has not the same meaning as in
-# other similar mappings.
-#
-# For  example,  in  `call  <SID>Matchparen(v:true)`, `v:true`  stands  for  the
-# enabled state of the matchparen plugin.  But here, `v:true` simply means "less
-# lightness", and `v:false` means "more lightness".
-#
-# That's  also why  we  just write  `v:true`  as the  final  argument passed  to
-# `ToggleSettings()`.   We  can't come  up  with  an expression  describing  the
-# enabled state, because there is no such thing as an enabled state.
-#
-# ---
-#
-# This implies that `col` doesn't work as with other settings.
-# It doesn't toggle anything; it just increases the lightness.
-#}}}
-ToggleSettings(
-    'l',
-    'call <SID>Lightness(v:true)',
-    'call <SID>Lightness(v:false)',
-    'v:true',
 )
 
 ToggleSettings(
