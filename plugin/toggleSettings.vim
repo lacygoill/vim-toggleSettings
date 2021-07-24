@@ -563,11 +563,12 @@ def FixWinline(old: number, dir: string)
     endif
 enddef
 
-def Colorscheme(type: string) #{{{2
-    if type == 'light'
-        colorscheme seoul-light
-    else
-        colorscheme seoul-dark
+def Colorscheme(background: string) #{{{2
+    var name: string = getcompletion('', 'color')
+        ->filter((_, v: string): bool => v =~ 'seoul' && v =~ background)
+        ->get(0, '')
+    if name != ''
+        execute 'colorscheme ' .. name
     endif
 enddef
 
