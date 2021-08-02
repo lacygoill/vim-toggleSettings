@@ -259,9 +259,11 @@ command -bar -bang FoldAutoOpen toggleSettings#autoOpenFold(<bang><bang>0)
 # Autocmds {{{1
 
 augroup HlYankedText | autocmd!
-    autocmd TextYankPost * if HlYankedText('is_active')
-        |     AutoHlYankedText()
-        | endif
+    autocmd TextYankPost * {
+        if HlYankedText('is_active')
+            AutoHlYankedText()
+        endif
+    }
 augroup END
 
 # Statusline Flags {{{1
