@@ -17,7 +17,7 @@ var loaded = true
 # It can  also be  used for (accidental)  repeated activations,  or (accidental)
 # repeated disactivations.
 #
-# There is no issue if the  function has no side effect (e.g.: `Colorscheme()`).
+# There is no issue if the  function has no side effect.
 # But if it does (e.g. `#autoOpenFold()` creates a `b:` variable), and doesn't
 # handle repeated (dis)activations, you can experience an unexpected behavior.
 #
@@ -565,15 +565,6 @@ def FixWinline(old: number, dir: string)
     endif
 enddef
 
-def Colorscheme(background: string) #{{{2
-    var name: string = getcompletion('', 'color')
-        ->filter((_, v: string): bool => v =~ 'seoul' && v =~ background)
-        ->get(0, '')
-    if name != ''
-        execute 'colorscheme ' .. name
-    endif
-enddef
-
 def Conceallevel(enable: bool) #{{{2
     if enable
         &l:conceallevel = 0
@@ -596,6 +587,40 @@ def Debugging(enable: bool) #{{{2
 # and autocmds which  can interfere (i.e. add *a lot*  of irrelevant noise) when
 # we are in debug mode.  Let's emulate the variable with `g:debugging`.
     g:debugging = enable
+    # Make sure we never debug an autocmd listening to `FocusLost`; it's too confusing.{{{
+    #
+    # In debug mode, if you temporarily  focus a different window program, a new
+    # frame is added on the stack for your autocmds listening to `FocusLost`.
+    # You probably don't care about the code they run; it's unexpected.
+    #
+    # Even more confusing, when Vim loses the focus, all mappings are disabled.
+    #
+    #     $ vim -Nu <(cat <<'EOF'
+    #         vim9script
+    #         &t_TI = ''
+    #         &t_TE = ''
+    #
+    #         &t_fe = "\<Esc>[?1004h"
+    #         &t_fd = "\<Esc>[?1004l"
+    #         autocmd FocusLost * eval 1 + 2
+    #
+    #         cnoremap xx yy
+    #         debug edit
+    #     EOF
+    #     )
+    #
+    #     # Focus another pane/window, get back, and press "xx"
+    #     # Expected: yy
+    #     # Actual: xx
+    #
+    # As a one-shot workaround, you can execute `> finish` to step over whatever
+    # code is run by the autocmd.  That should allow the mappings to work again,
+    # and pop the most recent (and undesirable) frame from the stack.
+    #
+    # But that's still too cumbersome and distracting.
+    # So we simply  disable `FocusLost`.
+    #}}}
+    &eventignore = enable ? 'FocusLost' : ''
     redrawtabline
 enddef
 
@@ -864,13 +889,6 @@ ToggleSettings(
 )
 
 ToggleSettings(
-    'C',
-    'call <SID>Colorscheme("dark")',
-    'call <SID>Colorscheme("light")',
-    '&background ==# "dark"',
-)
-
-ToggleSettings(
     'D',
     # `windo diffthis` would be simpler but might also change the currently focused window.
     'vim9cmd range(1, winnr("$"))->mapnew((_, v: number) => win_execute(win_getid(v), "diffthis"))',
@@ -878,13 +896,17 @@ ToggleSettings(
     '&l:diff',
 )
 
-# Do *not* use `]L`: it's already taken to move to the last entry in the ll.
-ToggleSettings(
-    'L',
-    'call colorscheme#cursorline(v:true)',
-    'call colorscheme#cursorline(v:false)',
-    '&l:cursorline',
-)
+# `$MYVIMRC` is empty when we start with `-Nu /tmp/vimrc`.
+if $MYVIMRC != ''
+    import Cursorline from $MYVIMRC
+    # Do *not* use `]L`: it's already taken to move to the last entry in the ll.
+    ToggleSettings(
+        'L',
+        'call ' .. expand('<SID>') .. 'Cursorline(v:true)',
+        'call ' .. expand('<SID>') .. 'Cursorline(v:false)',
+        '&l:cursorline',
+    )
+endif
 
 ToggleSettings(
     'S',
