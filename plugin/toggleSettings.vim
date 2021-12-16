@@ -899,7 +899,7 @@ ToggleSettings(
 # `$MYVIMRC` is empty when we start with `-Nu /tmp/vimrc`.
 if $MYVIMRC != ''
     import Cursorline from $MYVIMRC
-    # Do *not* use `]L`: it's already taken to move to the last entry in the ll.
+    # Do *not* use `]L`: it's already taken to move to the last entry in the location list.
     ToggleSettings(
         'L',
         'call ' .. expand('<SID>') .. 'Cursorline(v:true)',
@@ -933,7 +933,7 @@ ToggleSettings(
 
 # How is it useful?{{{
 #
-# When we select a  column of `a`'s, it's useful to press `C-a`  and get all the
+# When we select a column of `a`'s, it's useful to press `g C-a` and get all the
 # alphabetical characters from `a` to `z`.
 #
 # ---
@@ -1005,7 +1005,7 @@ ToggleSettings(
 #             truetrue: '&l:relativenumber = false',
 #             falsetrue: '&l:number = false',
 #             truefalse: '[&l:number, &l:relativenumber] = [false, false]',
-#             }[&l:number .. &l:relativenumber]
+#         }[&l:number .. &l:relativenumber]
 #     enddef
 #}}}
 ToggleSettings(
@@ -1047,8 +1047,8 @@ ToggleSettings(
 
 ToggleSettings(
     't',
-    'let b:foldtitle_full=v:true <Bar> redraw!',
-    'let b:foldtitle_full=v:false <Bar> redraw!',
+    'let b:foldtitle_full = v:true <Bar> redraw!',
+    'let b:foldtitle_full = v:false <Bar> redraw!',
     'get(b:, "foldtitle_full", v:false)',
 )
 
