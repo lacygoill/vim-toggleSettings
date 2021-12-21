@@ -1073,4 +1073,3 @@ ToggleSettings(
     'call toggleSettings#autoOpenFold(v:true)',
     'maparg("j", "n", v:false, v:true)->get("rhs", "") !~# "MoveAndOpenFold"'
 )
-
