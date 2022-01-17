@@ -225,12 +225,12 @@ var loaded = true
 
 # Init {{{1
 
-import Catch from 'lg.vim'
+import 'Lg.vim'
+const Catch: func = Lg.Catch
 
-import {
-    MapSave,
-    MapRestore,
-} from 'lg/map.vim'
+import 'lg/Map.vim'
+const Save: func = Map.Save
+const Restore: func = Map.Restore
 
 const AOF_LHS2NORM: dict<string> = {
     j: 'j',
@@ -258,7 +258,8 @@ command -bar -bang FoldAutoOpen toggleSettings#autoOpenFold(<bang><bang>0)
 
 # Autocmds {{{1
 
-augroup HlYankedText | autocmd!
+augroup HlYankedText
+    autocmd!
     autocmd TextYankPost * {
         if HlYankedText('is_active')
             AutoHlYankedText()
@@ -269,16 +270,17 @@ augroup END
 # Statusline Flags {{{1
 
 const SFILE: string = expand('<sfile>:p')
-augroup HoistToggleSettings | autocmd!
-    autocmd User MyFlags statusline#hoist('global',
+augroup HoistToggleSettings
+    autocmd!
+    autocmd User MyFlags StlFlag('global',
         \ '%{get(g:, "my_verbose_errors", v:false) ? "[Verb]" : ""}', 6, SFILE .. ':' .. expand('<sflnum>'))
-    autocmd User MyFlags statusline#hoist('global',
+    autocmd User MyFlags StlFlag('global',
         \ '%{get(g:, "debugging", v:false) ? "[Debug]" : ""}', 9, SFILE .. ':' .. expand('<sflnum>'))
-    autocmd User MyFlags statusline#hoist('buffer',
+    autocmd User MyFlags StlFlag('buffer',
         \ '%{exists("b:auto_open_fold_mappings") ? "[AOF]" : ""}', 45, SFILE .. ':' .. expand('<sflnum>'))
-    autocmd User MyFlags statusline#hoist('buffer',
+    autocmd User MyFlags StlFlag('buffer',
         \ '%{&l:synmaxcol > 999 ? "[smc>999]" : ""}', 46, SFILE .. ':' .. expand('<sflnum>'))
-    autocmd User MyFlags statusline#hoist('buffer',
+    autocmd User MyFlags StlFlag('buffer',
         \ '%{&l:nrformats =~# "alpha" ? "[nf~alpha]" : ""}', 47, SFILE .. ':' .. expand('<sflnum>'))
 augroup END
 
@@ -311,9 +313,9 @@ def ToggleSettings( #{{{2
         execute 'nmap <unique> ]o' .. key .. ' <Plug>(]o' .. key .. ')'
         execute 'nmap <unique> co' .. key .. ' <Plug>(co' .. key .. ')'
 
-        execute 'nnoremap <Plug>([o' .. key .. ') <Cmd>' .. set_cmd .. '<CR>'
-        execute 'nnoremap <Plug>(]o' .. key .. ') <Cmd>' .. reset_cmd .. '<CR>'
-        execute 'nnoremap <Plug>(co' .. key .. ') <Cmd>' .. toggle_cmd .. '<CR>'
+        execute 'nnoremap <Plug>([o' .. key .. ') <ScriptCmd>' .. set_cmd .. '<CR>'
+        execute 'nnoremap <Plug>(]o' .. key .. ') <ScriptCmd>' .. reset_cmd .. '<CR>'
+        execute 'nnoremap <Plug>(co' .. key .. ') <ScriptCmd>' .. toggle_cmd .. '<CR>'
 
     else
         [set_cmd, reset_cmd] = [option, reset]
@@ -328,9 +330,9 @@ def ToggleSettings( #{{{2
         execute 'nmap <unique> ]o' .. key .. ' <Plug>(]o' .. key .. ')'
         execute 'nmap <unique> co' .. key .. ' <Plug>(co' .. key .. ')'
 
-        execute 'nnoremap <Plug>([o' .. key .. ') <Cmd>' .. set_cmd .. '<CR>'
-        execute 'nnoremap <Plug>(]o' .. key .. ') <Cmd>' .. reset_cmd .. '<CR>'
-        execute 'nnoremap <Plug>(co' .. key .. ') <Cmd>' .. rhs3 .. '<CR>'
+        execute 'nnoremap <Plug>([o' .. key .. ') <ScriptCmd>' .. set_cmd .. '<CR>'
+        execute 'nnoremap <Plug>(]o' .. key .. ') <ScriptCmd>' .. reset_cmd .. '<CR>'
+        execute 'nnoremap <Plug>(co' .. key .. ') <ScriptCmd>' .. rhs3 .. '<CR>'
     endif
 enddef
 
@@ -341,7 +343,7 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
         endif
         b:auto_open_fold_mappings = AOF_LHS2NORM
             ->keys()
-            ->MapSave('n', true)
+            ->Save('n', true)
         for lhs: string in AOF_LHS2NORM->keys()
             # Why do you open all folds with `zR`?{{{
             #
@@ -367,13 +369,13 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
             # command-line.
             #}}}
             execute printf(
-                'nnoremap <buffer><nowait> %s <Cmd>call <SID>MoveAndOpenFold(%s, v:count)<CR>',
+                'nnoremap <buffer><nowait> %s <ScriptCmd>MoveAndOpenFold(%s, v:count)<CR>',
                     lhs,
                     lhs->substitute('^<\([^>]*>\)$', '<lt>\1', '')->string()
             )
         endfor
     elseif !enable && exists('b:auto_open_fold_mappings')
-        MapRestore(b:auto_open_fold_mappings)
+        Restore(b:auto_open_fold_mappings)
         unlet! b:auto_open_fold_mappings
     endif
 
@@ -415,9 +417,9 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
     #     fold_options_save: dict<any>
     #     ToggleSettings(
     #         'z',
-    #         'call <SID>AutoOpenFold(v:true)',
-    #         'call <SID>AutoOpenFold(v:false)',
-    #         '&foldopen ==# "all"',
+    #         'AutoOpenFold(true)',
+    #         'AutoOpenFold(false)',
+    #         '&foldopen == "all"',
     #         )
     #}}}
     #   What did it do?{{{
@@ -463,10 +465,13 @@ enddef
 # It gives you a little more control about this feature.
 #}}}
 def MoveAndOpenFold(lhs: string, cnt: number)
+    # We want to pass a count if we've pressed `123G`.
+    # But we don't want any count if we've just pressed `G`.
+    var scnt: string = (cnt != 0 ? cnt : '')
     var old_foldlevel: number = foldlevel('.')
     var old_winline: number = winline()
     if lhs == 'j' || lhs == '<Down>'
-        normal! gj
+        execute 'normal! ' .. scnt .. 'gj'
         if &filetype == 'markdown' && getline('.') =~ '^#\+$'
             return
         endif
@@ -491,7 +496,7 @@ def MoveAndOpenFold(lhs: string, cnt: number)
             endif
         endif
     elseif lhs == 'k' || lhs == '<Up>'
-        normal! gk
+        execute 'normal! ' .. scnt .. 'gk'
         if &filetype == 'markdown' && getline('.') =~ '^#\+$'
             return
         endif
@@ -508,11 +513,7 @@ def MoveAndOpenFold(lhs: string, cnt: number)
             endif
         endif
     else
-        execute 'silent! normal! zR'
-            # We want to pass a count if we've pressed `123G`.
-            # But we don't want any count if we've just pressed `G`.
-            .. (cnt != 0 ? cnt : '')
-            .. AOF_LHS2NORM[lhs] .. 'zMzv'
+        execute 'silent! normal! zR' .. scnt .. AOF_LHS2NORM[lhs] .. 'zMzv'
     endif
 enddef
 
@@ -595,7 +596,7 @@ def Debugging(enable: bool) #{{{2
     #
     # Even more confusing, when Vim loses the focus, all mappings are disabled.
     #
-    #     $ vim -Nu <(cat <<'EOF'
+    #     $ vim -Nu <(tee <<'EOF'
     #         vim9script
     #         &t_TI = ''
     #         &t_TE = ''
@@ -759,7 +760,6 @@ def AutoHlYankedText()
             hl_yanked_text_id != 0 && matchdelete(hl_yanked_text_id))
     catch
         Catch()
-        return
     endtry
 enddef
 var hl_yanked_text_id: number
@@ -840,7 +840,7 @@ def Nowrapscan(enable: bool) #{{{2
         # Why clearing `'whichwrap'` too?{{{
         #
         # It can cause the same issue as `'wrapscan'`.
-        # To stop, a recursive macro may need an error to be raised; however:
+        # To stop, a recursive macro may need an error to be given; however:
         #
         #    - this error may be triggered by an `h` or `l` motion
         #    - `'whichwrap'` suppresses this error if its value contains `h` or `l`
@@ -876,8 +876,8 @@ ToggleSettings('w', 'wrap')
 
 ToggleSettings(
     '<C-D>',
-    'call <SID>Debugging(v:true)',
-    'call <SID>Debugging(v:false)',
+    'Debugging(true)',
+    'Debugging(false)',
     'get(g:, "debugging")',
 )
 
@@ -885,49 +885,51 @@ ToggleSettings(
     '<Space>',
     'set diffopt+=iwhiteall',
     'set diffopt-=iwhiteall',
-    '&diffopt =~# "iwhiteall"',
+    '&diffopt =~ "iwhiteall"',
 )
 
 ToggleSettings(
     'D',
     # `windo diffthis` would be simpler but might also change the currently focused window.
-    'vim9cmd range(1, winnr("$"))->mapnew((_, v: number) => win_execute(win_getid(v), "diffthis"))',
+    'range(1, winnr("$"))->mapnew((_, v: number) => win_execute(win_getid(v), "diffthis"))',
     'diffoff! <Bar> normal! zv',
     '&l:diff',
 )
 
 # `$MYVIMRC` is empty when we start with `-Nu /tmp/vimrc`.
+var Cursorline: func
 if $MYVIMRC != ''
-    import Cursorline from $MYVIMRC
+    import $MYVIMRC as Vimrc
+    Cursorline = Vimrc.Cursorline
     # Do *not* use `]L`: it's already taken to move to the last entry in the location list.
     ToggleSettings(
         'L',
-        'call ' .. expand('<SID>') .. 'Cursorline(v:true)',
-        'call ' .. expand('<SID>') .. 'Cursorline(v:false)',
+        'Cursorline(true)',
+        'Cursorline(false)',
         '&l:cursorline',
     )
 endif
 
 ToggleSettings(
     'S',
-    'setlocal spelllang=fr <Bar> echo "[spelllang] FR"',
-    'setlocal spelllang=en <Bar> echo "[spelllang] EN"',
-    '&l:spelllang ==# "fr"',
+    '&l:spelllang = "fr" <Bar> echo "[spelllang] FR"',
+    '&l:spelllang = "en" <Bar> echo "[spelllang] EN"',
+    '&l:spelllang == "fr"',
 )
 
 ToggleSettings(
     'V',
-    'let g:my_verbose_errors = v:true <Bar> redrawtabline',
-    'let g:my_verbose_errors = v:false <Bar> redrawtabline',
-    'get(g:, "my_verbose_errors", v:false)',
+    'g:my_verbose_errors = true <Bar> redrawtabline',
+    'g:my_verbose_errors = false <Bar> redrawtabline',
+    'get(g:, "my_verbose_errors", false)',
 )
 
 # it's useful to temporarily disable `'wrapscan'` before executing a recursive macro,
 # to be sure it's not stuck in an infinite loop
 ToggleSettings(
     'W',
-    'call <SID>Nowrapscan(v:true)',
-    'call <SID>Nowrapscan(v:false)',
+    'Nowrapscan(true)',
+    'Nowrapscan(false)',
     '!&wrapscan',
 )
 
@@ -956,8 +958,8 @@ ToggleSettings(
 #}}}
 ToggleSettings(
     'c',
-    'call <SID>Conceallevel(v:true)',
-    'call <SID>Conceallevel(v:false)',
+    'Conceallevel(true)',
+    'Conceallevel(false)',
     '&l:conceallevel == 0',
 )
 
@@ -970,15 +972,15 @@ ToggleSettings(
 
 ToggleSettings(
     'e',
-    'call <SID>EditHelpFile(v:true)',
-    'call <SID>EditHelpFile(v:false)',
+    'EditHelpFile(true)',
+    'EditHelpFile(false)',
     '&buftype == ""',
 )
 
 ToggleSettings(
     'm',
-    'call <SID>Synmaxcol(v:true)',
-    'call <SID>Synmaxcol(v:false)',
+    'Synmaxcol(true)',
+    'Synmaxcol(false)',
     '&l:synmaxcol == ' .. SMC_BIG,
 )
 
@@ -991,12 +993,12 @@ ToggleSettings(
 #
 # ---
 #
-#     nnoremap <unique> con <Cmd>call <SID>Numbers()<CR>
+#     nnoremap <unique> con <ScriptCmd>Numbers()<CR>
 #
 #     def Numbers()
 #         # The key '01' (state) is not necessary because no command in the dictionary
 #         # brings us to it.
-#         # However, if we got in this state by accident, hitting the mapping would raise
+#         # However, if we got in this state by accident, hitting the mapping would give
 #         # an error (E716: Key not present in Dictionary).
 #         # So, we include it, and give it a value which brings us to state '11'.
 #
@@ -1010,15 +1012,15 @@ ToggleSettings(
 #}}}
 ToggleSettings(
     'n',
-    'setlocal number',
-    'setlocal nonumber',
+    '&l:number = true',
+    '&l:number = false',
     '&l:number',
 )
 
 ToggleSettings(
     'p',
-    'call <SID>Matchparen(v:true)',
-    'call <SID>Matchparen(v:false)',
+    'Matchparen(true)',
+    'Matchparen(false)',
     'exists("#matchparen")',
 )
 
@@ -1026,50 +1028,50 @@ ToggleSettings(
 # execute formatting tools such as `js-beautify` in html/css/js files.
 ToggleSettings(
     'q',
-    'call <SID>Formatprg("local")',
-    'call <SID>Formatprg("global")',
+    'Formatprg("local")',
+    'Formatprg("global")',
     '&l:formatprg != ""',
 )
 
 ToggleSettings(
     'r',
-    'call <SID>Scrollbind(v:true)',
-    'call <SID>Scrollbind(v:false)',
+    'Scrollbind(true)',
+    'Scrollbind(false)',
     '&l:scrollbind',
 )
 
 ToggleSettings(
     's',
-    'setlocal spell"',
-    'setlocal nospell"',
+    '&l:spell = true',
+    '&l:spell = false',
     '&l:spell',
 )
 
 ToggleSettings(
     't',
-    'let b:foldtitle_full = v:true <Bar> redraw!',
-    'let b:foldtitle_full = v:false <Bar> redraw!',
-    'get(b:, "foldtitle_full", v:false)',
+    'b:foldtitle_full = true <Bar> redraw!',
+    'b:foldtitle_full = false <Bar> redraw!',
+    'get(b:, "foldtitle_full", false)',
 )
 
 ToggleSettings(
     'v',
-    'call <SID>Virtualedit(v:true)',
-    'call <SID>Virtualedit(v:false)',
-    '&virtualedit ==# "all"',
+    'Virtualedit(true)',
+    'Virtualedit(false)',
+    '&virtualedit == "all"',
 )
 
 ToggleSettings(
     'y',
-    'call <SID>HlYankedText("enable")',
-    'call <SID>HlYankedText("disable")',
-    '<SID>HlYankedText("is_active")',
+    'HlYankedText("enable")',
+    'HlYankedText("disable")',
+    'HlYankedText("is_active")',
 )
 
 # Vim uses `z` as a prefix to build all fold-related commands in normal mode.
 ToggleSettings(
     'z',
-    'call toggleSettings#autoOpenFold(v:false)',
-    'call toggleSettings#autoOpenFold(v:true)',
-    'maparg("j", "n", v:false, v:true)->get("rhs", "") !~# "MoveAndOpenFold"'
+    'toggleSettings#autoOpenFold(false)',
+    'toggleSettings#autoOpenFold(true)',
+    'maparg("j", "n", false, true)->get("rhs", "") !~ "MoveAndOpenFold"'
 )
