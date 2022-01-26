@@ -18,8 +18,9 @@ var loaded = true
 # repeated disactivations.
 #
 # There is no issue if the  function has no side effect.
-# But if it does (e.g. `#autoOpenFold()` creates a `b:` variable), and doesn't
-# handle repeated (dis)activations, you can experience an unexpected behavior.
+# But if it does  (e.g. `ToggleSettingsAutoOpenFold()` creates a `b:` variable),
+# and doesn't handle repeated (dis)activations, you can experience an unexpected
+# behavior.
 #
 # For example, let's assume the function saves in a variable some info necessary
 # to restore the current state.
@@ -225,12 +226,8 @@ var loaded = true
 
 # Init {{{1
 
-import 'Lg.vim'
-const Catch: func = Lg.Catch
-
-import 'lg/Map.vim'
-const Save: func = Map.Save
-const Restore: func = Map.Restore
+import 'lg.vim'
+import 'lg/mapping.vim'
 
 const AOF_LHS2NORM: dict<string> = {
     j: 'j',
@@ -254,7 +251,7 @@ var synmaxcol_save: dict<number>
 
 # Commands {{{1
 
-command -bar -bang FoldAutoOpen toggleSettings#autoOpenFold(<bang><bang>0)
+command -bar -bang FoldAutoOpen ToggleSettingsAutoOpenFold(<bang><bang>0)
 
 # Autocmds {{{1
 
@@ -336,14 +333,14 @@ def ToggleSettings( #{{{2
     endif
 enddef
 
-def toggleSettings#autoOpenFold(enable: bool) #{{{2
+def g:ToggleSettingsAutoOpenFold(enable: bool) #{{{2
     if enable && !exists('b:auto_open_fold_mappings')
         if foldclosed('.') >= 0
             normal! zvzz
         endif
         b:auto_open_fold_mappings = AOF_LHS2NORM
             ->keys()
-            ->Save('n', true)
+            ->mapping.Save('n', true)
         for lhs: string in AOF_LHS2NORM->keys()
             # Why do you open all folds with `zR`?{{{
             #
@@ -375,13 +372,13 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
             )
         endfor
     elseif !enable && exists('b:auto_open_fold_mappings')
-        Restore(b:auto_open_fold_mappings)
+        mapping.Restore(b:auto_open_fold_mappings)
         unlet! b:auto_open_fold_mappings
     endif
 
     # Old Code:{{{
     #
-    #     def AutoOpenFold(enable: bool)
+    #     def g:ToggleSettingsAutoOpenFold(enable: bool)
     #         if enable && &foldopen != 'all'
     #             fold_options_save = {
     #                 open: &foldopen,
@@ -417,10 +414,10 @@ def toggleSettings#autoOpenFold(enable: bool) #{{{2
     #     fold_options_save: dict<any>
     #     ToggleSettings(
     #         'z',
-    #         'AutoOpenFold(true)',
-    #         'AutoOpenFold(false)',
+    #         'ToggleSettingsAutoOpenFold(true)',
+    #         'ToggleSettingsAutoOpenFold(false)',
     #         '&foldopen == "all"',
-    #         )
+    #     )
     #}}}
     #   What did it do?{{{
     #
@@ -759,7 +756,7 @@ def AutoHlYankedText()
         timer_start(HL_TIME, (_) =>
             hl_yanked_text_id != 0 && matchdelete(hl_yanked_text_id))
     catch
-        Catch()
+        lg.Catch()
     endtry
 enddef
 var hl_yanked_text_id: number
@@ -899,8 +896,8 @@ ToggleSettings(
 # `$MYVIMRC` is empty when we start with `-Nu /tmp/vimrc`.
 var Cursorline: func
 if $MYVIMRC != ''
-    import $MYVIMRC as Vimrc
-    Cursorline = Vimrc.Cursorline
+    import $MYVIMRC as vimrc
+    Cursorline = vimrc.Cursorline
     # Do *not* use `]L`: it's already taken to move to the last entry in the location list.
     ToggleSettings(
         'L',
@@ -1071,7 +1068,7 @@ ToggleSettings(
 # Vim uses `z` as a prefix to build all fold-related commands in normal mode.
 ToggleSettings(
     'z',
-    'toggleSettings#autoOpenFold(false)',
-    'toggleSettings#autoOpenFold(true)',
+    'ToggleSettingsAutoOpenFold(false)',
+    'ToggleSettingsAutoOpenFold(true)',
     'maparg("j", "n", false, true)->get("rhs", "") !~ "MoveAndOpenFold"'
 )
