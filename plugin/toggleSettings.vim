@@ -18,9 +18,9 @@ var loaded = true
 # repeated disactivations.
 #
 # There is no issue if the  function has no side effect.
-# But if it does  (e.g. `ToggleSettingsAutoOpenFold()` creates a `b:` variable),
-# and doesn't handle repeated (dis)activations, you can experience an unexpected
-# behavior.
+# But  if   it  does  (e.g.  `g:ToggleSettingsAutoOpenFold()`   creates  a  `b:`
+# variable), and doesn't handle repeated (dis)activations, you can experience an
+# unexpected behavior.
 #
 # For example, let's assume the function saves in a variable some info necessary
 # to restore the current state.
@@ -105,7 +105,7 @@ var loaded = true
 #
 # Example:
 #
-# When  we press  `[oq`,  the state  "local  value of  'formatprg'  is used"  is
+# When  we press  `[oq`,  the state  “local  value of  'formatprg'  is used”  is
 # enabled; let's call this state X.
 #
 # When we disable X, `formatprg_save` is created inside `Formatprg()`.
@@ -151,7 +151,7 @@ var loaded = true
 
 # I want to toggle between the global value and the local value of a buffer-local option.{{{
 #}}}
-#   Which one should I consider to be the "enabled" state?{{{
+#   Which one should I consider to be the “enabled” state?{{{
 #
 # The local value.
 # It makes sense,  because usually when you  enable sth, you tend  to think it's
@@ -182,9 +182,9 @@ var loaded = true
 #
 #     # in a terminal with 24 lines
 #     set scrollbind scrollopt=ver number
-#     silent put =range(char2nr('a'), char2nr('z'))->mapnew((_, v) => nr2char(v))->repeat(2)
+#     silent put =range(char2nr('a'), char2nr('z'))->map((_, v) => nr2char(v))->repeat(2)
 #     botright vnew
-#     silent put =range(char2nr('a'), char2nr('z'))->mapnew((_, v) => nr2char(v))
+#     silent put =range(char2nr('a'), char2nr('z'))->map((_, v) => nr2char(v))
 #     windo :1
 #     wincmd w
 #
@@ -251,7 +251,7 @@ var synmaxcol_save: dict<number>
 
 # Commands {{{1
 
-command -bar -bang FoldAutoOpen ToggleSettingsAutoOpenFold(<bang><bang>0)
+command -bar -bang FoldAutoOpen g:ToggleSettingsAutoOpenFold(<bang><bang>0)
 
 # Autocmds {{{1
 
@@ -269,15 +269,15 @@ augroup END
 const SFILE: string = expand('<sfile>:p')
 augroup HoistToggleSettings
     autocmd!
-    autocmd User MyFlags StlFlag('global',
+    autocmd User MyFlags g:StatusLineFlag('global',
         \ '%{get(g:, "my_verbose_errors", v:false) ? "[Verb]" : ""}', 6, SFILE .. ':' .. expand('<sflnum>'))
-    autocmd User MyFlags StlFlag('global',
+    autocmd User MyFlags g:StatusLineFlag('global',
         \ '%{get(g:, "debugging", v:false) ? "[Debug]" : ""}', 9, SFILE .. ':' .. expand('<sflnum>'))
-    autocmd User MyFlags StlFlag('buffer',
+    autocmd User MyFlags g:StatusLineFlag('buffer',
         \ '%{exists("b:auto_open_fold_mappings") ? "[AOF]" : ""}', 45, SFILE .. ':' .. expand('<sflnum>'))
-    autocmd User MyFlags StlFlag('buffer',
+    autocmd User MyFlags g:StatusLineFlag('buffer',
         \ '%{&l:synmaxcol > 999 ? "[smc>999]" : ""}', 46, SFILE .. ':' .. expand('<sflnum>'))
-    autocmd User MyFlags StlFlag('buffer',
+    autocmd User MyFlags g:StatusLineFlag('buffer',
         \ '%{&l:nrformats =~# "alpha" ? "[nf~alpha]" : ""}', 47, SFILE .. ':' .. expand('<sflnum>'))
 augroup END
 
@@ -414,8 +414,8 @@ def g:ToggleSettingsAutoOpenFold(enable: bool) #{{{2
     #     fold_options_save: dict<any>
     #     ToggleSettings(
     #         'z',
-    #         'ToggleSettingsAutoOpenFold(true)',
-    #         'ToggleSettingsAutoOpenFold(false)',
+    #         'g:ToggleSettingsAutoOpenFold(true)',
+    #         'g:ToggleSettingsAutoOpenFold(false)',
     #         '&foldopen == "all"',
     #     )
     #}}}
@@ -566,6 +566,7 @@ enddef
 def Conceallevel(enable: bool) #{{{2
     if enable
         &l:conceallevel = 0
+        ToggleKittyLigatures(enable)
     else
         # Why toggling between `0` and `2`, instead of `0` and `3` like everywhere else?{{{
         #
@@ -575,8 +576,16 @@ def Conceallevel(enable: bool) #{{{2
         # It could also be useful to pretty-print some logical/math symbols.
         #}}}
         &l:conceallevel = &filetype == 'markdown' ? 2 : 3
+        ToggleKittyLigatures(enable)
     endif
     echo '[conceallevel] ' .. &l:conceallevel
+enddef
+
+def ToggleKittyLigatures(enable: bool)
+    if &term !~ 'kitty'
+        return
+    endif
+    system('kitty @ disable-ligatures --all ' .. (enable ? 'always' : 'cursor'))
 enddef
 
 def Debugging(enable: bool) #{{{2
@@ -888,7 +897,7 @@ ToggleSettings(
 ToggleSettings(
     'D',
     # `windo diffthis` would be simpler but might also change the currently focused window.
-    'range(1, winnr("$"))->mapnew((_, v: number) => win_execute(win_getid(v), "diffthis"))',
+    'range(1, winnr("$"))->map((_, v: number) => win_execute(win_getid(v), "diffthis"))',
     'diffoff! <Bar> normal! zv',
     '&l:diff',
 )
@@ -1068,7 +1077,7 @@ ToggleSettings(
 # Vim uses `z` as a prefix to build all fold-related commands in normal mode.
 ToggleSettings(
     'z',
-    'ToggleSettingsAutoOpenFold(false)',
-    'ToggleSettingsAutoOpenFold(true)',
+    'g:ToggleSettingsAutoOpenFold(false)',
+    'g:ToggleSettingsAutoOpenFold(true)',
     'maparg("j", "n", false, true)->get("rhs", "") !~ "MoveAndOpenFold"'
 )
