@@ -31,7 +31,7 @@ var loaded = true
 # state – now B – overwriting the info about A.
 # So, when you will invoke it to restore A, you will, in effect, restore B.
 #}}}
-#   Ok, but concretely, what should I avoid?{{{
+#   OK, but concretely, what should I avoid?{{{
 #
 # *Never* write this:
 #
