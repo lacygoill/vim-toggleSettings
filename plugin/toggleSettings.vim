@@ -251,7 +251,13 @@ var synmaxcol_save: dict<number>
 
 # Commands {{{1
 
-command -bar -bang FoldAutoOpen g:ToggleSettingsAutoOpenFold(<bang><bang>0)
+# Don't write `<bang><bang>0`.{{{
+#
+# Without a bang, you would get `0`.
+# With a bang, you would get `false`.
+# IOW, you would never enable the feature.
+#}}}
+command -bar -bang FoldAutoOpen g:ToggleSettingsAutoOpenFold(<bang>0 ? false : true)
 
 # Autocmds {{{1
 
