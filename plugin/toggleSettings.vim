@@ -726,7 +726,7 @@ def AutoHlYankedText()
         var text: list<string> = v:event.regcontents
         var type: string = v:event.regtype
         var lnum: number = line('.')
-        var vcol: number = virtcol([lnum, col('.') - 1]) + 1
+        var vcol: number = virtcol('.', true)[0]
         var pat: string
         if type == 'v'
             # Alternative to avoid the quantifier:{{{
